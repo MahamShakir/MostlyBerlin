@@ -24,6 +24,12 @@
 
     <!-- Day-1 bootstrap: all 5 tables + indexes -->
     <include file="db/changelog/changes/001-init.xml"/>
+    <include file="db/changelog/changes/002-create-trades.xml"/>
+    <include file="db/changelog/changes/003-create-instruments.xml"/>
+    <include file="db/changelog/changes/004-create-counterparties.xml"/>
+    <include file="db/changelog/changes/005-create-settlements.xml"/>
+    <include file="db/changelog/changes/006-create-recon-breaks.xml"/>
+
 
     <!--
         As you complete Day-1 tickets I003..I008 (REVIEW + EXTEND the
