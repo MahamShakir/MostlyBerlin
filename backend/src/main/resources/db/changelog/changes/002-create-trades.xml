@@ -51,9 +51,6 @@
         <createIndex tableName="trades" indexName="idx_trades_trade_date">
             <column name="trade_date"/>
         </createIndex>
-        <createIndex tableName="trades" indexName="idx_trades_status">
-            <column name="status"/>
-        </createIndex>
 
         <rollback>
             <dropTable tableName="trades"/>
