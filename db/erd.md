@@ -6,49 +6,50 @@
 
 ```mermaid
 erDiagram
-    COUNTERPARTIES ||--o{ TRADES : "originates"
-    INSTRUMENTS    ||--o{ TRADES : "references"
-    TRADES         ||--o{ RECON_RESULTS : "produces"
-    TRADES         ||--o{ AUDIT_LOG : "is audited by"
+    COUNTERPARTIES ||--o{ TRADES        : "originates"
+    INSTRUMENTS    ||--o{ TRADES        : "references"
+    TRADES         ||--o{ SETTLEMENTS   : "settles"
+    TRADES         ||--o{ RECON_BREAKS  : "may produce"
 
     COUNTERPARTIES {
         BIGINT id PK
         VARCHAR name
         CHAR(20) lei_code UK
-        VARCHAR region
+        VARCHAR region "APAC|EMEA|NAMR|LATAM"
     }
     INSTRUMENTS {
         BIGINT id PK
         VARCHAR symbol UK
         VARCHAR name
-        VARCHAR asset_class
-        CHAR(3) currency
+        VARCHAR asset_class "EQUITY|FIXED_INCOME|FX|COMMODITY|DERIVATIVE"
+        CHAR(3)
+currency
+        CHAR(12) isin UK
     }
     TRADES {
         BIGINT id PK
         VARCHAR trade_ref UK
         BIGINT instrument_id FK
         BIGINT counterparty_id FK
-        NUMERIC quantity
-        NUMERIC price
+        NUMERIC quantity "(18,4) > 0"
+        NUMERIC price "(18,4) >= 0"
         DATE trade_date
-        VARCHAR status
+        VARCHAR status "PENDING|MATCHED|UNMATCHED|DISPUTED|CANCELLED"
+        TIMESTAMPTZ created_at
     }
-    RECON_RESULTS {
+    SETTLEMENTS {
         BIGINT id PK
         BIGINT trade_id FK
-        VARCHAR status
-        VARCHAR discrepancy_type
-        TIMESTAMPTZ resolved_at
+        DATE settlement_date
+        NUMERIC amount "(18,4) >= 0"
+        VARCHAR status "PENDING|SETTLED|FAILED|CANCELLED"
     }
-    AUDIT_LOG {
+    RECON_BREAKS {
         BIGINT id PK
-        VARCHAR entity
-        BIGINT entity_id
-        VARCHAR action
-        JSONB old_value
-        JSONB new_value
-        TIMESTAMPTZ "timestamp"
+        BIGINT trade_id FK
+        VARCHAR discrepancy_type "PRICE|QUANTITY|MISSING|DUPLICATE|STATUS"
+        VARCHAR status "OPEN|INVESTIGATING|RESOLVED|IGNORED"
+        TIMESTAMPTZ resolved_at
     }
 ```
 
