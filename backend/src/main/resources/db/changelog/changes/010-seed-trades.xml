@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <changeSet id="010-seed-trades" author="your-name">
+    <changeSet id="010-seed-trades" author="gyeongeun-Lee">
         <insert tableName="trades"><column name="trade_ref" value="TRD-2026-0001"/><column name="instrument_id" valueNumeric="1"/><column name="counterparty_id" valueNumeric="1"/><column name="quantity" valueNumeric="1000.0000"/><column name="price" valueNumeric="245.5000"/><column name="trade_date" valueDate="2026-03-01"/><column name="status" value="MATCHED"/></insert>
         <insert tableName="trades"><column name="trade_ref" value="TRD-2026-0002"/><column name="instrument_id" valueNumeric="1"/><column name="counterparty_id" valueNumeric="2"/><column name="quantity" valueNumeric="500.0000"/><column name="price" valueNumeric="246.0000"/><column name="trade_date" valueDate="2026-03-01"/><column name="status" value="UNMATCHED"/></insert>
         <insert tableName="trades"><column name="trade_ref" value="TRD-2026-0003"/><column name="instrument_id" valueNumeric="2"/><column name="counterparty_id" valueNumeric="1"/><column name="quantity" valueNumeric="100000.0000"/><column name="price" valueNumeric="99.5000"/><column name="trade_date" valueDate="2026-03-02"/><column name="status" value="MATCHED"/></insert>
