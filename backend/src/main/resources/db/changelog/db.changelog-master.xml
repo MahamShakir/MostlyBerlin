@@ -40,7 +40,7 @@
         As you complete Day-1 tickets I003..I008 (REVIEW + EXTEND the
         bootstrap), add new changeset files here. Naming convention:
 
-            002-<your-change>.xml   author=<your-handle>
+            002-<your-change>.xml   author=<Kushagra Mishra>
 
         Example additions you might write:
           - Add CHECK constraints on trades.status and trades.quantity > 0
