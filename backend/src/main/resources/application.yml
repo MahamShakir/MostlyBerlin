@@ -1,3 +1,4 @@
+
 # ============================================================================
 # application.yml — Shared base config across all profiles
 # ============================================================================
@@ -9,7 +10,8 @@
 # OBSERVE: On startup, look for the line "The following 1 profile is active: dev"
 #          (or uat/prod) to confirm the right config loaded.
 # ============================================================================
-
+server:
+  port: 8081
 spring:
   application:
     name: tradeflow
