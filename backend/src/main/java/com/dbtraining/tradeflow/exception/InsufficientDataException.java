@@ -12,6 +12,7 @@ package com.dbtraining.tradeflow.exception;
  * OBSERVE: Thrown by Builder.build() when a required field is null.
  * ============================================================================
  */
+
 public class InsufficientDataException extends RuntimeException {
 
     public InsufficientDataException(String message) {
