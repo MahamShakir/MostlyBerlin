@@ -1,5 +1,8 @@
 package com.dbtraining.tradeflow.model;
 
+import java.time.Instant;
+import java.util.Objects;
+
 /**
  * ============================================================================
  * ReconResult — TICKET-I024 + TICKET-I058
@@ -25,4 +28,63 @@ package com.dbtraining.tradeflow.model;
  */
 public class ReconResult {
     // TODO(TICKET-I024): fields, private ctor, Builder, getters.
+    private Long id;
+    private Long tradeId;
+    private String status;
+    private DiscrepancyType discrepancyType;
+    private Instant detectedAt;
+    private Instant resolvedAt;
+
+    ReconResult() {}
+
+    private ReconResult(Builder b) {
+        this.tradeId = b.tradeId;
+        this.discrepancyType = b.discrepancyType;
+        this.status          = b.status != null ? b.status : "OPEN";
+        this.detectedAt      = b.detectedAt != null ? b.detectedAt : Instant.now();
+        this.resolvedAt      = b.resolvedAt;
+    }
+
+    public static Builder builder() { return new Builder(); }
+
+    public Long getId()                        { return id; }
+    public Long getTradeId()                   { return tradeId; }
+    public String getStatus()                  { return status; }
+    public DiscrepancyType getDiscrepancyType(){ return discrepancyType; }
+    public Instant getDetectedAt()             { return detectedAt; }
+    public Instant getResolvedAt()             { return resolvedAt; }
+
+    public static final class Builder {
+        private Long tradeId;
+        private String status;
+        private DiscrepancyType discrepancyType;
+        private Instant detectedAt;
+        private Instant resolvedAt;
+
+        public Builder tradeId(Long v)                      { this.tradeId = v;         return this; }
+        public Builder status(String v)                     { this.status = v;          return this; }
+        public Builder discrepancyType(DiscrepancyType v)   { this.discrepancyType = v; return this; }
+        public Builder detectedAt(Instant v)                { this.detectedAt = v;      return this; }
+        public Builder resolvedAt(Instant v)                { this.resolvedAt = v;      return this; }
+
+        public ReconResult build() {
+            Objects.requireNonNull(tradeId, "tradeId required");
+            Objects.requireNonNull(discrepancyType, "discrepancyType required");
+            return new ReconResult(this);
+        }
+    }
+
+    public void resolve() {
+        if ("RESOLVED".equals(this.status)) return;
+        this.status = "RESOLVED";
+        this.resolvedAt = Instant.now();
+    }
+
+    public boolean isOpen() { return "OPEN".equals(status); }
+
+    @Override
+    public String toString() {
+        return "ReconResult[trade=" + tradeId + " | " + discrepancyType + " | " + status + "]";
+    }
 }
+
