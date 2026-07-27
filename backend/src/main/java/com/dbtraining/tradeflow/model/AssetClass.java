@@ -26,6 +26,10 @@ public enum AssetClass {
     public boolean isCash() {
         // HINT: a switch expression keeps this compact and readable:
         //   return switch (this) { case EQUITY, FIXED_INCOME, FX -> true; default -> false; };
-        throw new UnsupportedOperationException("TICKET-I020: implement AssetClass.isCash()");
+        // throw new UnsupportedOperationException("TICKET-I020: implement AssetClass.isCash()");
+        return switch (this) {
+            case EQUITY, FIXED_INCOME, FX -> true;
+            case COMMODITY, DERIVATIVE -> false;
+        };
     }
 }
