@@ -1,14 +1,10 @@
+// backend/src/main/java/com/dbtraining/tradeflow/model/DiscrepancyType.java
 package com.dbtraining.tradeflow.model;
 
 /**
- * ============================================================================
- * DiscrepancyType — TICKET-I021
- * ============================================================================
- * WHAT:    The reason code for a reconciliation break.
- * WHY:     Ops users need to know WHY a trade broke — not just that it did.
- * OBSERVE: Day 3's ReconciliationService.matchTrades() decides which
- *          discrepancy type to flag based on field-by-field comparison.
- * ============================================================================
+ * DiscrepancyType — TICKET-I021.
+ * Reason code for a reconciliation break. Ops users see the describe()
+ * output in the recon UI and CSV export.
  */
 public enum DiscrepancyType {
 
@@ -17,16 +13,13 @@ public enum DiscrepancyType {
     DATE_MISMATCH,
     MISSING_TRADE;
 
-    /**
-     * TODO(TICKET-I021): implement describe() — return a short
-     * human-readable string for the UI / CSV export.
-     *
-     * Examples:
-     *   PRICE_MISMATCH    -> "Price does not match counterparty record"
-     *   MISSING_TRADE     -> "Trade exists internally but not externally"
-     */
+    /** Short human-readable string for UI / CSV export. */
     public String describe() {
-        // HINT: switch expression on `this`.
-        throw new UnsupportedOperationException("TICKET-I021: implement DiscrepancyType.describe()");
+        return switch (this) {
+            case PRICE_MISMATCH    -> "Price does not match counterparty record";
+            case QUANTITY_MISMATCH -> "Quantity does not match counterparty record";
+            case DATE_MISMATCH     -> "Trade or settlement date mismatch";
+            case MISSING_TRADE     -> "Trade exists on one side only";
+        };
     }
 }
