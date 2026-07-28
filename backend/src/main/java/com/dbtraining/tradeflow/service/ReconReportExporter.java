@@ -69,8 +69,8 @@ public class ReconReportExporter {
     }
 
     private String rowFor(ReconResult r) {
-        String tradeRef = r.getTrade() != null ? r.getTrade().getTradeRef() : "";
-        String status = r.getStatus() != null ? r.getStatus().name() : "";
+        String tradeRef = r.getTradeId() != null ? r.getTradeId().toString() : "";
+        String status = r.getStatus() != null ? r.getStatus() : "";
         String discrepancy = r.getDiscrepancyType() != null ? r.getDiscrepancyType().name() : "";
         Instant resolved = r.getResolvedAt();
         String resolvedStr = resolved != null ? resolved.toString() : "";
