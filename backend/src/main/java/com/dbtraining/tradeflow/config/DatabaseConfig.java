@@ -28,9 +28,34 @@ import javax.sql.DataSource;
  *    }
  * ============================================================================
  */
-public class DatabaseConfig {
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
+public final class DatabaseConfig {
+
+    private static volatile DataSource instance;
+
+    private DatabaseConfig() {}
+
+    /** Lazily-built singleton — call as often as you like, you'll only ever get one pool. */
     public static DataSource dataSource() {
-        throw new UnsupportedOperationException("TICKET-I044: configure HikariCP");
+        DataSource local = instance;
+        if (local == null) {
+            synchronized (DatabaseConfig.class) {
+                local = instance;
+                if (local == null) {
+                    HikariConfig cfg = new HikariConfig();
+                    cfg.setJdbcUrl(System.getenv().getOrDefault(
+                            "JDBC_URL", "jdbc:postgresql://localhost:5432/tradeflow"));
+                    cfg.setUsername(System.getenv().getOrDefault("POSTGRES_USER", "tradeflow_user"));
+                    cfg.setPassword(System.getenv().getOrDefault("POSTGRES_PASSWORD", "changeme"));
+                    cfg.setMaximumPoolSize(10);
+                    cfg.setConnectionTimeout(5_000);
+                    cfg.setPoolName("tradeflow-jdbc");
+                    instance = local = new HikariDataSource(cfg);
+                }
+            }
+        }
+        return local;
     }
 }
