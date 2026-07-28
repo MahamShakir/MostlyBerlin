@@ -5,6 +5,7 @@ import com.dbtraining.tradeflow.dto.ReconReport;
 import com.dbtraining.tradeflow.dto.ReconSummary;
 import com.dbtraining.tradeflow.model.BaseTrade;
 import com.dbtraining.tradeflow.model.DiscrepancyType;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -36,6 +37,8 @@ import java.util.stream.Collectors;
  * - Keep this class < 200 lines. Pull helpers into private methods.
  * ============================================================================
  */
+
+@Service
 public class ReconciliationService {
 
     // TODO(TICKET-I034): constructor / dependencies (Day 5 will add repos here).
