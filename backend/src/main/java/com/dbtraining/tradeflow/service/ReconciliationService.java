@@ -6,10 +6,7 @@ import com.dbtraining.tradeflow.dto.ReconSummary;
 import com.dbtraining.tradeflow.model.BaseTrade;
 import com.dbtraining.tradeflow.model.DiscrepancyType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -97,7 +94,32 @@ public class ReconciliationService {
      * TODO(TICKET-I036):
      *   Reduce a ReconReport into a ReconSummary suitable for the API + UI.
      */
-    public ReconSummary generateReport(Object reconReport) {
-        throw new UnsupportedOperationException("TICKET-I036: implement generateReport");
+    public ReconSummary generateReport(ReconReport report) {
+        Objects.requireNonNull(report, "report required");
+
+        Map<DiscrepancyType, Integer> breakdown = new EnumMap<>(DiscrepancyType.class);
+        for (DiscrepancyType t : DiscrepancyType.values()) breakdown.put(t, 0);
+        for (Discrepancy d : report.discrepancies()) {
+            for (DiscrepancyType t : d.discrepancyTypes()) breakdown.merge(t, 1, Integer::sum);
+        }
+        return new ReconSummary(
+                report.internalSize(),
+                report.externalSize(),
+                report.matched().size(),
+                report.discrepancies().size(),
+                Collections.unmodifiableMap(breakdown));
+    }
+
+    public String render(ReconSummary s) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Reconciliation summary\n----------------------\n")
+                .append(String.format("  Internal trades : %d%n", s.totalInternal()))
+                .append(String.format("  External trades : %d%n", s.totalExternal()))
+                .append(String.format("  Matched         : %d%n", s.matchedCount()))
+                .append(String.format("  With breaks     : %d%n", s.unmatchedCount()))
+                .append("  Breakdown:\n");
+        s.breakdownByType().forEach((type, count) ->
+                sb.append(String.format("    - %-20s %d%n", type, count)));
+        return sb.toString();
     }
 }
