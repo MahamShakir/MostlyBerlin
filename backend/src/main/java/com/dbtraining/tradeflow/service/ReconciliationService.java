@@ -82,24 +82,14 @@ public class ReconciliationService {
         return new ReconReport(internal.size(), external.size(), matched, discrepancies);
     }
 
-    private List<DiscrepancyType> classify(BaseTrade internal, BaseTrade external) {
-        List<DiscrepancyType> diffs = new ArrayList<>();
-
-        // PRICE_MISMATCH: Compare prices using compareTo (NOT equals for BigDecimal)
-        if (internal.getPrice().compareTo(external.getPrice()) != 0) {
+    private List<DiscrepancyType> classify(BaseTrade in, BaseTrade out) {
+        List<DiscrepancyType> diffs = new ArrayList<>(2);
+        if (in.getPrice().compareTo(out.getPrice()) != 0)
             diffs.add(DiscrepancyType.PRICE_MISMATCH);
-        }
-
-        // QUANTITY_MISMATCH: Compare quantities
-        if (internal.getQuantity().compareTo(external.getQuantity()) != 0) {
+        if (in.getQuantity().compareTo(out.getQuantity()) != 0)
             diffs.add(DiscrepancyType.QUANTITY_MISMATCH);
-        }
-
-        // DATE_MISMATCH: Compare trade dates
-        if (!internal.getTradeDate().equals(external.getTradeDate())) {
+        if (!Objects.equals(in.getTradeDate(), out.getTradeDate()))
             diffs.add(DiscrepancyType.DATE_MISMATCH);
-        }
-
         return diffs;
     }
 
