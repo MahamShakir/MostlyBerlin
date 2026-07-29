@@ -4,6 +4,6 @@ import com.dbtraining.tradeflow.model.BaseTrade;
 
 import java.util.List;
 
-public record ReconReport(int internalSize, int externalSize, List<BaseTrade> matched,
+public record ReconReport(int totalInternal, int totalExternal, List<BaseTrade> matched,
                           List<Discrepancy> discrepancies) {
 }
