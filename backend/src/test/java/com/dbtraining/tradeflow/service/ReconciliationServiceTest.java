@@ -6,7 +6,9 @@ import com.dbtraining.tradeflow.model.BaseTrade;
 import com.dbtraining.tradeflow.model.DiscrepancyType;
 import com.dbtraining.tradeflow.model.EquityTrade;
 import com.dbtraining.tradeflow.model.TradeStatus;
+import com.dbtraining.tradeflow.repository.ReconResultDAO;
 import com.dbtraining.tradeflow.repository.ReconResultRepository;
+import com.dbtraining.tradeflow.repository.TradeDAO;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,11 +30,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  * ============================================================================
  * WHAT:    JUnit + Mockito tests for the recon engine.
  * HOW:     @ExtendWith(MockitoExtension.class). Mock the DAOs, build sample
- *          trade lists, assert on the returned ReconReport.
+ * trade lists, assert on the returned ReconReport.
  * WHY:     Day 4 sets a 70% coverage target. ReconciliationService is the
- *          critical path — it gets the most attention.
+ * critical path — it gets the most attention.
  * OBSERVE: `mvn test` runs these in a few seconds; JaCoCo report shows the
- *          coverage % per class.
+ * coverage % per class.
  * ============================================================================
  */
 
@@ -40,47 +42,50 @@ import static org.junit.jupiter.api.Assertions.fail;
 class ReconciliationServiceTest {
 
 
-        @Mock private ReconResultRepository reconResultRepository;
-        private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
-        private ReconciliationService service;
+    @Mock
+    private ReconResultRepository reconResultRepository;
+    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private ReconciliationService service;
 
-    @Mock private TradeDAO tradeDAO;
-    @Mock private ReconResultDAO reconResultDAO;
+    @Mock
+    private TradeDAO tradeDAO;
+    @Mock
+    private ReconResultDAO reconResultDAO;
 
-    private ReconciliationOrchestrator service;
+//    private ReconciliationOrchestrator service;
 
-        @BeforeEach
-        void setUp() {
-            service = new ReconciliationService(reconResultRepository, meterRegistry);
-        }
+    @BeforeEach
+    void setUp() {
+        service = new ReconciliationService();
+    }
 
-        @Test
-        void matchTrades_allMatched_returnsEmptyDiscrepancies() {
-            List<BaseTrade> internal = List.of(equity("TRD-001"), equity("TRD-002"), equity("TRD-003"));
-            List<BaseTrade> external = List.of(equity("TRD-001"), equity("TRD-002"), equity("TRD-003"));
+    @Test
+    void matchTrades_allMatched_returnsEmptyDiscrepancies() {
+        List<BaseTrade> internal = List.of(equity("TRD-001"), equity("TRD-002"), equity("TRD-003"));
+        List<BaseTrade> external = List.of(equity("TRD-001"), equity("TRD-002"), equity("TRD-003"));
 
-            ReconReport report = service.matchTrades(internal, external);
+        ReconReport report = service.matchTrades(internal, external);
 
-            assertThat(report.discrepancies()).isEmpty();
-            assertThat(report.matched()).hasSize(3);
-            assertThat(report.totalInternal()).isEqualTo(3);
-            assertThat(report.totalExternal()).isEqualTo(3);
-        }
+        assertThat(report.discrepancies()).isEmpty();
+        assertThat(report.matched()).hasSize(3);
+        assertThat(report.totalInternal()).isEqualTo(3);
+        assertThat(report.totalExternal()).isEqualTo(3);
+    }
 
-        private static BaseTrade equity(String tradeRef) {
-            return EquityTrade.builder()
-                    .tradeRef(tradeRef).instrumentId(1L).counterpartyId(1L)
-                    .quantity(new BigDecimal("100")).price(new BigDecimal("245.50"))
-                    .tradeDate(LocalDate.of(2026, 3, 1))
-                    .status(TradeStatus.MATCHED)
-                    .exchange("XETRA").lotSize(100)
-                    .build();
-        }
+    private static BaseTrade equity(String tradeRef) {
+        return EquityTrade.builder()
+                .tradeRef(tradeRef).instrumentId(1L).counterpartyId(1L)
+                .quantity(new BigDecimal("100")).price(new BigDecimal("245.50"))
+                .tradeDate(LocalDate.of(2026, 3, 1))
+                .status(TradeStatus.MATCHED)
+                .exchange("XETRA").lotSize(100)
+                .build();
+    }
 
 
     @Test
     void matchTrades_priceMismatch_flagsDiscrepancy() {
-        BaseTrade in  = equityWith("TRD-001", new BigDecimal("100"),
+        BaseTrade in = equityWith("TRD-001", new BigDecimal("100"),
                 new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
         BaseTrade out = equityWith("TRD-001", new BigDecimal("100"),
                 new BigDecimal("249.99"), LocalDate.of(2026, 3, 1));
@@ -94,11 +99,13 @@ class ReconciliationServiceTest {
         assertThat(d.types()).containsExactly(DiscrepancyType.PRICE_MISMATCH);
     }
 
-    /** Scale-difference regression test: 245.5 vs 245.50 are equal by compareTo. */
+    /**
+     * Scale-difference regression test: 245.5 vs 245.50 are equal by compareTo.
+     */
     @Test
     void matchTrades_priceScaleDifference_notFlagged() {
-        BaseTrade in  = equityWith("TRD-002", new BigDecimal("100"),
-                new BigDecimal("245.5"),  LocalDate.of(2026, 3, 1));
+        BaseTrade in = equityWith("TRD-002", new BigDecimal("100"),
+                new BigDecimal("245.5"), LocalDate.of(2026, 3, 1));
         BaseTrade out = equityWith("TRD-002", new BigDecimal("100"),
                 new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
 

@@ -103,11 +103,11 @@ public class ReconciliationService {
         Map<DiscrepancyType, Integer> breakdown = new EnumMap<>(DiscrepancyType.class);
         for (DiscrepancyType t : DiscrepancyType.values()) breakdown.put(t, 0);
         for (Discrepancy d : report.discrepancies()) {
-            for (DiscrepancyType t : d.discrepancyTypes()) breakdown.merge(t, 1, Integer::sum);
+            for (DiscrepancyType t : d.types()) breakdown.merge(t, 1, Integer::sum);
         }
         return new ReconSummary(
-                report.internalSize(),
-                report.externalSize(),
+                report.totalInternal(),
+                report.totalExternal(),
                 report.matched().size(),
                 report.discrepancies().size(),
                 Collections.unmodifiableMap(breakdown));
