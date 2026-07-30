@@ -38,6 +38,8 @@ import java.util.List;
 @Tag(name = "Trades", description = "Trade management endpoints")
 public class TradeController {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final TradeService tradeService;
 
     public TradeController(TradeService tradeService) {
@@ -47,20 +49,35 @@ public class TradeController {
     // ------------------------------------------------------------------------
     // TICKET-I068
     // ------------------------------------------------------------------------
-    @Operation(summary = "List trades (paginated, filterable)")
+    @Operation(summary = "List trades (paginated, optional status filter)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Page of trades returned"),
+            @ApiResponse(responseCode = "401", description = "Auth missing"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role")
+    })
     @GetMapping
-    public List<TradeDto> list(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) LocalDate from,
-            @RequestParam(required = false) LocalDate to
-    ) {
-        // TODO(TICKET-I068): replace this empty response with a real DB-backed
-        //   call once the JDBC DAO (Day 4 / TICKET-I045) or JPA repository
-        //   (Day 5 / TICKET-I060+I062) is in place.
-        //   For Day 1, returning an empty list keeps the React UI booting
-        //   gracefully (shows "no trades match") while you build the schema.
-        return Collections.emptyList();
+    public Page<TradeDto> list(
+            @RequestParam(required = false) TradeStatus status,
+            @PageableDefault(size = 20, sort = "tradeDate",
+                    direction = Sort.Direction.DESC) Pageable pageable) {
+        if (pageable.getPageSize() > MAX_PAGE_SIZE) {
+            throw new IllegalArgumentException("page size must be <= " + MAX_PAGE_SIZE);
+        }
+        return status != null
+                ? tradeService.findPageByStatus(status, pageable)
+                : tradeService.findAll(pageable);
     }
+
+    @Operation(summary = "List trades whose tradeDate falls within a range")
+    @GetMapping("/by-date")
+    public Page<TradeDto> listByDate(
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to,
+            @PageableDefault(size = 20, sort = "tradeDate",
+                    direction = Sort.Direction.DESC) Pageable pageable) {
+        return tradeService.findByTradeDateBetween(from, to, pageable);
+    }
+}
 
     // ------------------------------------------------------------------------
     // TICKET-I069
