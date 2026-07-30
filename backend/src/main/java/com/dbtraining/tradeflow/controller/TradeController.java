@@ -77,7 +77,6 @@ public class TradeController {
                     direction = Sort.Direction.DESC) Pageable pageable) {
         return tradeService.findByTradeDateBetween(from, to, pageable);
     }
-}
 
     // ------------------------------------------------------------------------
     // TICKET-I069
@@ -100,11 +99,22 @@ public class TradeController {
     // TICKET-I070
     // ------------------------------------------------------------------------
     @Operation(summary = "Update a trade's status")
+    // TODO(TICKET-I070): delegate to tradeService.updateStatus(id, body.status()).
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Updated"),
+            @ApiResponse(responseCode = "404", description = "Trade not found"),
+            @ApiResponse(responseCode = "409", description = "Cannot transition from terminal status")
+    })
     @PutMapping("/{id}/status")
-    public TradeDto updateStatus(@PathVariable Long id, @RequestBody StatusUpdate body) {
-        // TODO(TICKET-I070): delegate to tradeService.updateStatus(id, body.status()).
-        throw new UnsupportedOperationException("TICKET-I070");
+    public ResponseEntity<TradeDto> updateStatus(@PathVariable Long id,
+                                                 @Valid @RequestBody StatusUpdate body) {
+        TradeDto updated = tradeService.updateStatus(id, body.status());
+        return ResponseEntity.ok()
+                .location(URI.create("/api/v1/trades/" + id))
+                .body(updated);
     }
+
+    public record StatusUpdate(@NotNull TradeStatus status) {}
 
     // ------------------------------------------------------------------------
     // TICKET-I071 — soft delete

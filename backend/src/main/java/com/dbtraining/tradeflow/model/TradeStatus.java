@@ -22,7 +22,8 @@ public enum TradeStatus {
     MATCHED,
     UNMATCHED,
     DISPUTED,
-    CANCELLED;
+    CANCELLED,
+    SETTLED;
 
     /**
      * TODO(TICKET-I019): implement isTerminal().

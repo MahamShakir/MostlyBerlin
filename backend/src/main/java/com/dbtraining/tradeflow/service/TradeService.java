@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * ============================================================================
@@ -48,6 +50,11 @@ public class TradeService {
     private final TradeRepository tradeRepository;
     private final InstrumentRepository instrumentRepository;
     private final CounterpartyRepository counterpartyRepository;
+    private static final Map<TradeStatus, Set<TradeStatus>> ALLOWED = Map.of(
+            TradeStatus.PENDING,   Set.of(TradeStatus.MATCHED, TradeStatus.CANCELLED),
+            TradeStatus.MATCHED,   Set.of(TradeStatus.SETTLED, TradeStatus.CANCELLED),
+            TradeStatus.UNMATCHED, Set.of(TradeStatus.MATCHED, TradeStatus.CANCELLED)
+    );
 
     public TradeService(TradeRepository tradeRepository,
                         InstrumentRepository instrumentRepository,
@@ -118,9 +125,22 @@ public class TradeService {
         return TradeDto.from(saved);
     }
 
+    @Transactional
     public TradeDto updateStatus(Long id, TradeStatus newStatus) {
         // TODO(TICKET-I070): implement on Day 6.
-        throw new UnsupportedOperationException("TICKET-I070");
+        Trade trade = tradeRepository.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException("Trade " + id + " not found"));
+        if (trade.getStatus().isTerminal()) {
+            throw new IllegalStateException(
+                    "Trade " + id + " is in terminal state " + trade.getStatus());
+        }
+        Set<TradeStatus> allowed = ALLOWED.getOrDefault(trade.getStatus(), Set.of());
+        if (!allowed.contains(newStatus)) {
+            throw new IllegalStateException(
+                    "Illegal transition " + trade.getStatus() + " -> " + newStatus);
+        }
+        trade.setStatus(newStatus);
+        return TradeDto.from(trade);
     }
 
     public void softDelete(Long id) {
