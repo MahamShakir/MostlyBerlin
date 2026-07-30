@@ -1,5 +1,7 @@
 package com.dbtraining.tradeflow.model;
 
+import jakarta.persistence.*;
+
 import java.util.Objects;
 
 /**
@@ -24,13 +26,28 @@ import java.util.Objects;
  *    - @Column(length = 3, nullable = false) on currency
  * ============================================================================
  */
+@Entity
+@Table(name = "instruments")
 public class Instrument {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, unique = true, length = 20)
     private String symbol;
+
+    @Column(nullable = false, length = 200)
     private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "asset_class", nullable = false, length = 20)
     private AssetClass assetClass;
+
+    @Column(nullable = false, length = 3)
     private String currency;
+
+    @Column(unique = true, length = 12)
     private String isin;
 
     Instrument() {}
