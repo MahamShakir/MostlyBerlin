@@ -83,12 +83,17 @@ public class TradeController {
     // TICKET-I069
     // ------------------------------------------------------------------------
     @Operation(summary = "Create a new trade")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Trade created, Location header set"),
+            @ApiResponse(responseCode = "400", description = "Validation failed"),
+            @ApiResponse(responseCode = "409", description = "Duplicate tradeRef")
+    })
     @PostMapping
     public ResponseEntity<TradeDto> create(@Valid @RequestBody TradeRequest request) {
-        // TODO(TICKET-I069): call service, build Location header, return 201.
-        //   TradeDto saved = tradeService.createTrade(request);
-        //   return ResponseEntity.created(URI.create("/api/v1/trades/" + saved.id())).body(saved);
-        throw new UnsupportedOperationException("TICKET-I069");
+        TradeDto saved = tradeService.createTrade(request);
+        return ResponseEntity
+                .created(URI.create("/api/v1/trades/" + saved.id()))
+                .body(saved);
     }
 
     // ------------------------------------------------------------------------
