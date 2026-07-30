@@ -14,12 +14,12 @@ import java.time.LocalDate;
  * WHAT:    Inbound DTO for POST /api/v1/trades.
  * HOW:     Java `record` + Bean Validation annotations.
  * WHY:     Annotated validation triggers automatically when the controller
- *          method param is marked @Valid. Failed validation → HTTP 400 with
- *          field-level details.
+ * method param is marked @Valid. Failed validation → HTTP 400 with
+ * field-level details.
  * OBSERVE: Sending {"quantity": -1} returns a 400 with a clean message:
- *          "quantity: must be greater than 0".
+ * "quantity: must be greater than 0".
  * ============================================================================
- *
+ * <p>
  *  TODO(TICKET-I069): tune the validation rules:
  *    - tradeRef: @NotBlank + @Pattern matching your team's ref format (TRD-YYYY-####)
  *    - instrumentId / counterpartyId: @NotNull @Positive
@@ -29,26 +29,22 @@ import java.time.LocalDate;
  * ============================================================================
  */
 public record TradeRequest(
-
         @NotBlank
-        String tradeRef,
-
-        @NotNull @Positive
-        Long instrumentId,
-
-        @NotNull @Positive
-        Long counterpartyId,
-
-        @NotNull @Positive
-        BigDecimal quantity,
-
-        @NotNull @Positive
-        BigDecimal price,
+        @Pattern(regexp = "TRD-\\d{4}-\\d{4}") String tradeRef,
 
         @NotNull
-        LocalDate tradeDate
+        @Positive Long instrumentId,
 
-        // TODO(TICKET-I069): add `status` if you want clients to pass it,
-        //                    otherwise the service defaults it to PENDING.
+        @NotNull
+        @Positive Long counterpartyId,
+
+        @NotNull
+        @Positive BigDecimal quantity,
+
+        @NotNull
+        @Positive BigDecimal price,
+
+        @NotNull
+        @PastOrPresent LocalDate tradeDate
 ) {
 }
