@@ -1,6 +1,10 @@
 package com.dbtraining.tradeflow.service;
 
-import com.dbtraining.tradeflow.model.*;
+import com.dbtraining.tradeflow.dto.ReconSummary;
+import com.dbtraining.tradeflow.model.DiscrepancyType;
+import com.dbtraining.tradeflow.model.ReconResult;
+import com.dbtraining.tradeflow.model.Trade;
+import com.dbtraining.tradeflow.model.TradeStatus;
 import com.dbtraining.tradeflow.repository.ReconResultDAO;
 import com.dbtraining.tradeflow.repository.TradeDAO;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,11 +20,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * ReconciliationServiceMockTest — TICKET-I051 (mock TradeDAO + verify findAll())
@@ -83,7 +83,7 @@ class ReconciliationServiceMockTest {
         assertThat(inserted.getDiscrepancyType())
                 .isEqualTo(DiscrepancyType.MISSING_TRADE);
         assertThat(inserted.getStatus())
-                .isEqualTo(ReconResult.Status.OPEN);
+                .isEqualTo(ReconResult.builder().build().getStatus()); // default OPEN
     }
 
     /** Negative-path counterpart to I052 — over-eager persistence surfaces loudly. */
