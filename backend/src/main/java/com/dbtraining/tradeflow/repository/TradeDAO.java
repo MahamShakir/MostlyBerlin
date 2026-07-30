@@ -34,8 +34,8 @@ public class TradeDAO {
         try (Connection cx = dataSource.getConnection();
              PreparedStatement ps = cx.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, trade.getTradeRef());
-            ps.setLong(2,   trade.getInstrumentId());
-            ps.setLong(3,   trade.getCounterpartyId());
+            ps.setLong(2,   trade.getInstrument().getId());
+            ps.setLong(3,   trade.getCounterparty().getId());
             ps.setBigDecimal(4, trade.getQuantity());
             ps.setBigDecimal(5, trade.getPrice());
             ps.setDate(6, Date.valueOf(trade.getTradeDate()));
@@ -103,7 +103,7 @@ public class TradeDAO {
                 .region(rs.getString("c_region")).build();
         return Trade.builder()
                 .tradeRef(rs.getString("t_trade_ref"))
-                .instrumentID(rs.getLong("t_instrument_id")).counterpartyID(rs.getLong("t_counterparty_id"))
+                .instrument(instrument).counterparty(counterparty)
                 .quantity(rs.getBigDecimal("t_quantity"))
                 .price(rs.getBigDecimal("t_price"))
                 .tradeDate(rs.getDate("t_trade_date").toLocalDate())
