@@ -120,12 +120,15 @@ public class TradeController {
     // TICKET-I071 — soft delete
     // ------------------------------------------------------------------------
     @Operation(summary = "Soft-delete a trade (sets status to CANCELLED)")
+    // TODO(TICKET-I071): tradeService.softDelete(id); return 204.
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Soft-deleted (idempotent)"),
+            @ApiResponse(responseCode = "404", description = "Trade not found"),
+            @ApiResponse(responseCode = "409", description = "Trade already SETTLED")
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> softDelete(@PathVariable Long id) {
-        // TODO(TICKET-I071): tradeService.softDelete(id); return 204.
-        throw new UnsupportedOperationException("TICKET-I071");
+        tradeService.softDelete(id);
+        return ResponseEntity.noContent().build();
     }
-
-    /** Tiny inbound record for PUT /{id}/status. */
-    public record StatusUpdate(String status) {}
 }

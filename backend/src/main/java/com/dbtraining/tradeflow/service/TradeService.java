@@ -143,8 +143,17 @@ public class TradeService {
         return TradeDto.from(trade);
     }
 
+    @Transactional
     public void softDelete(Long id) {
         // TODO(TICKET-I071): implement soft delete + audit log on Day 6.
-        throw new UnsupportedOperationException("TICKET-I071");
+        Trade trade = tradeRepository.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException("Trade " + id + " not found"));
+        if (trade.getStatus() == TradeStatus.CANCELLED) {
+            return;  // idempotent
+        }
+        if (trade.getStatus() == TradeStatus.SETTLED) {
+            throw new IllegalStateException("Trade " + id + " is SETTLED — cannot cancel");
+        }
+        trade.setStatus(TradeStatus.CANCELLED);
     }
 }
