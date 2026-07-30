@@ -59,7 +59,7 @@ public class ReconResult {
     private ReconResult(Builder b) {
         this.trade           = b.trade;
         this.discrepancyType = b.discrepancyType;
-        this.status          = String.valueOf(b.status != null ? b.status : Status.OPEN);
+        this.status          = b.status != null ? b.status : Status.OPEN;
         this.detectedAt      = b.detectedAt != null ? b.detectedAt : Instant.now();
         this.resolvedAt      = b.resolvedAt;
     }
