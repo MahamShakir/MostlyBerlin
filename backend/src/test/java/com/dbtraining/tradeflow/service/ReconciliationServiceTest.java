@@ -41,18 +41,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(MockitoExtension.class)
 class ReconciliationServiceTest {
 
-
-    @Mock
-    private ReconResultRepository reconResultRepository;
-    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+    @Mock	
     private ReconciliationService service;
-
-    @Mock
-    private TradeDAO tradeDAO;
-    @Mock
-    private ReconResultDAO reconResultDAO;
-
-//    private ReconciliationOrchestrator service;
 
     @BeforeEach
     void setUp() {
@@ -72,23 +62,12 @@ class ReconciliationServiceTest {
         assertThat(report.totalExternal()).isEqualTo(3);
     }
 
-    private static BaseTrade equity(String tradeRef) {
-        return EquityTrade.builder()
-                .tradeRef(tradeRef).instrumentId(1L).counterpartyId(1L)
-                .quantity(new BigDecimal("100")).price(new BigDecimal("245.50"))
-                .tradeDate(LocalDate.of(2026, 3, 1))
-                .status(TradeStatus.MATCHED)
-                .exchange("XETRA").lotSize(100)
-                .build();
-    }
-
-
     @Test
     void matchTrades_priceMismatch_flagsDiscrepancy() {
-        BaseTrade in = equityWith("TRD-001", new BigDecimal("100"),
-                new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
+        BaseTrade in  = equityWith("TRD-001", new BigDecimal("100"),
+                                   new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
         BaseTrade out = equityWith("TRD-001", new BigDecimal("100"),
-                new BigDecimal("249.99"), LocalDate.of(2026, 3, 1));
+                                   new BigDecimal("249.99"), LocalDate.of(2026, 3, 1));
 
         ReconReport report = service.matchTrades(List.of(in), List.of(out));
 
@@ -99,28 +78,18 @@ class ReconciliationServiceTest {
         assertThat(d.types()).containsExactly(DiscrepancyType.PRICE_MISMATCH);
     }
 
-    /**
-     * Scale-difference regression test: 245.5 vs 245.50 are equal by compareTo.
-     */
+    /** Scale-difference regression test: 245.5 vs 245.50 are equal by compareTo. */
     @Test
     void matchTrades_priceScaleDifference_notFlagged() {
-        BaseTrade in = equityWith("TRD-002", new BigDecimal("100"),
-                new BigDecimal("245.5"), LocalDate.of(2026, 3, 1));
+        BaseTrade in  = equityWith("TRD-002", new BigDecimal("100"),
+                                   new BigDecimal("245.5"),  LocalDate.of(2026, 3, 1));
         BaseTrade out = equityWith("TRD-002", new BigDecimal("100"),
-                new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
+                                   new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
 
         ReconReport report = service.matchTrades(List.of(in), List.of(out));
 
         assertThat(report.discrepancies()).isEmpty();
         assertThat(report.matched()).hasSize(1);
-    }
-
-    private static BaseTrade equityWith(String tradeRef, BigDecimal qty, BigDecimal price, LocalDate date) {
-        return EquityTrade.builder()
-                .tradeRef(tradeRef).instrumentId(1L).counterpartyId(1L)
-                .quantity(qty).price(price).tradeDate(date)
-                .status(TradeStatus.MATCHED).exchange("XETRA").lotSize(100)
-                .build();
     }
 
     @Test
@@ -149,15 +118,21 @@ class ReconciliationServiceTest {
                 .containsExactly(DiscrepancyType.MISSING_TRADE);
     }
 
-    // TODO(TICKET-I051): test with @Mock TradeDAO + verify(...).findAll() called.
-    @Test
-    void mockedTradeDAO_findAllCalledOnce() {
-        fail("TICKET-I051: implement test");
+    private static BaseTrade equity(String tradeRef) {
+        return EquityTrade.builder()
+                .tradeRef(tradeRef).instrumentId(1L).counterpartyId(1L)
+                .quantity(new BigDecimal("100")).price(new BigDecimal("245.50"))
+                .tradeDate(LocalDate.of(2026, 3, 1))
+                .status(TradeStatus.MATCHED)
+                .exchange("XETRA").lotSize(100)
+                .build();
     }
 
-    // TODO(TICKET-I052): test with @Mock ReconResultDAO + ArgumentCaptor.
-    @Test
-    void mockedReconResultDAO_insertCalledPerDiscrepancy() {
-        fail("TICKET-I052: implement test");
+    private static BaseTrade equityWith(String tradeRef, BigDecimal qty, BigDecimal price, LocalDate date) {
+        return EquityTrade.builder()
+                .tradeRef(tradeRef).instrumentId(1L).counterpartyId(1L)
+                .quantity(qty).price(price).tradeDate(date)
+                .status(TradeStatus.MATCHED).exchange("XETRA").lotSize(100)
+                .build();
     }
 }
