@@ -182,7 +182,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
-
+	    
             <!-- TICKET-I135: coverage threshold in CI -->
             <plugin>
                 <groupId>org.jacoco</groupId>

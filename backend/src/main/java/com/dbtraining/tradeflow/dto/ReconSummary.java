@@ -5,20 +5,12 @@ import com.dbtraining.tradeflow.model.DiscrepancyType;
 import java.util.Map;
 
 /**
- * ============================================================================
- * ReconSummary — TICKET-I036
- * ============================================================================
- * WHAT:    Rolled-up output of a reconciliation run.
- * WHY:     Both the console (Day 3) and REST API (Day 6 `POST /api/v1/recon/run`)
- *          return this — same shape, two surfaces.
- * ============================================================================
+ * ReconSummary — TICKET-I036.
  *
- *  HINTS:
- *  - `totalInternal`, `totalExternal` = sizes of the input lists.
- *  - `matchedCount` = how many trades matched cleanly.
- *  - `unmatchedCount` = how many had at least one discrepancy.
- *  - `breakdownByType` = how many of each DiscrepancyType.
- * ============================================================================
+ * Rolled-up output of a reconciliation run — the shape both the Day-3
+ * console and the Day-6 REST endpoint return. breakdownByType is seeded
+ * with every DiscrepancyType (see ReconciliationService.generateReport)
+ * so downstream consumers never have to null-guard missing keys.
  */
 public record ReconSummary(
         int totalInternal,
@@ -27,4 +19,6 @@ public record ReconSummary(
         int unmatchedCount,
         Map<DiscrepancyType, Integer> breakdownByType
 ) {
+    /** Convenience accessor — total trades seen on the internal (TradeDAO) side. */
+    public int totalTrades() { return totalInternal; }
 }

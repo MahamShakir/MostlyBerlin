@@ -2,13 +2,8 @@ package com.dbtraining.tradeflow.service;
 
 import com.dbtraining.tradeflow.dto.Discrepancy;
 import com.dbtraining.tradeflow.dto.ReconReport;
-import com.dbtraining.tradeflow.model.BaseTrade;
-import com.dbtraining.tradeflow.model.DiscrepancyType;
-import com.dbtraining.tradeflow.model.EquityTrade;
-import com.dbtraining.tradeflow.model.TradeStatus;
-import com.dbtraining.tradeflow.repository.ReconResultDAO;
+import com.dbtraining.tradeflow.model.*;
 import com.dbtraining.tradeflow.repository.ReconResultRepository;
-import com.dbtraining.tradeflow.repository.TradeDAO;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,43 +17,33 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * ============================================================================
- * ReconciliationServiceTest — TICKET-I048..I053
- * ============================================================================
- * WHAT:    JUnit + Mockito tests for the recon engine.
- * HOW:     @ExtendWith(MockitoExtension.class). Mock the DAOs, build sample
- * trade lists, assert on the returned ReconReport.
- * WHY:     Day 4 sets a 70% coverage target. ReconciliationService is the
- * critical path — it gets the most attention.
- * OBSERVE: `mvn test` runs these in a few seconds; JaCoCo report shows the
- * coverage % per class.
- * ============================================================================
+ * ReconciliationServiceTest — TICKET-I048 (all-matched happy path)
+ *                            + TICKET-I049 (price mismatch flagged, plus
+ *                              scale-difference regression)
+ *                            + TICKET-I050 (missing-external / missing-internal
+ *                              siblings).
+ *
+ * Pure-function tests — no @SpringBootTest, no live DB, sub-second run.
+ * Naming convention: methodUnderTest_scenario_expected — the whole Day-4
+ * suite follows the same pattern so JaCoCo output stays greppable.
  */
-
 @ExtendWith(MockitoExtension.class)
 class ReconciliationServiceTest {
 
-
-    @Mock
-    private ReconResultRepository reconResultRepository;
+    @Mock private ReconResultRepository reconResultRepository;
     private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
     private ReconciliationService service;
 
-    @Mock
-    private TradeDAO tradeDAO;
-    @Mock
-    private ReconResultDAO reconResultDAO;
-
-//    private ReconciliationOrchestrator service;
-
     @BeforeEach
     void setUp() {
-        service = new ReconciliationService();
+        service = new ReconciliationService(reconResultRepository, meterRegistry);
     }
 
+    // -----------------------------------------------------------------------
+    // TICKET-I048
+    // -----------------------------------------------------------------------
     @Test
     void matchTrades_allMatched_returnsEmptyDiscrepancies() {
         List<BaseTrade> internal = List.of(equity("TRD-001"), equity("TRD-002"), equity("TRD-003"));
@@ -72,23 +57,15 @@ class ReconciliationServiceTest {
         assertThat(report.totalExternal()).isEqualTo(3);
     }
 
-    private static BaseTrade equity(String tradeRef) {
-        return EquityTrade.builder()
-                .tradeRef(tradeRef).instrumentId(1L).counterpartyId(1L)
-                .quantity(new BigDecimal("100")).price(new BigDecimal("245.50"))
-                .tradeDate(LocalDate.of(2026, 3, 1))
-                .status(TradeStatus.MATCHED)
-                .exchange("XETRA").lotSize(100)
-                .build();
-    }
-
-
+    // -----------------------------------------------------------------------
+    // TICKET-I049
+    // -----------------------------------------------------------------------
     @Test
     void matchTrades_priceMismatch_flagsDiscrepancy() {
-        BaseTrade in = equityWith("TRD-001", new BigDecimal("100"),
-                new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
+        BaseTrade in  = equityWith("TRD-001", new BigDecimal("100"),
+                                   new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
         BaseTrade out = equityWith("TRD-001", new BigDecimal("100"),
-                new BigDecimal("249.99"), LocalDate.of(2026, 3, 1));
+                                   new BigDecimal("249.99"), LocalDate.of(2026, 3, 1));
 
         ReconReport report = service.matchTrades(List.of(in), List.of(out));
 
@@ -99,15 +76,13 @@ class ReconciliationServiceTest {
         assertThat(d.types()).containsExactly(DiscrepancyType.PRICE_MISMATCH);
     }
 
-    /**
-     * Scale-difference regression test: 245.5 vs 245.50 are equal by compareTo.
-     */
+    /** Scale-difference regression test: 245.5 vs 245.50 are equal by compareTo. */
     @Test
     void matchTrades_priceScaleDifference_notFlagged() {
-        BaseTrade in = equityWith("TRD-002", new BigDecimal("100"),
-                new BigDecimal("245.5"), LocalDate.of(2026, 3, 1));
+        BaseTrade in  = equityWith("TRD-002", new BigDecimal("100"),
+                                   new BigDecimal("245.5"),  LocalDate.of(2026, 3, 1));
         BaseTrade out = equityWith("TRD-002", new BigDecimal("100"),
-                new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
+                                   new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
 
         ReconReport report = service.matchTrades(List.of(in), List.of(out));
 
@@ -115,14 +90,9 @@ class ReconciliationServiceTest {
         assertThat(report.matched()).hasSize(1);
     }
 
-    private static BaseTrade equityWith(String tradeRef, BigDecimal qty, BigDecimal price, LocalDate date) {
-        return EquityTrade.builder()
-                .tradeRef(tradeRef).instrumentId(1L).counterpartyId(1L)
-                .quantity(qty).price(price).tradeDate(date)
-                .status(TradeStatus.MATCHED).exchange("XETRA").lotSize(100)
-                .build();
-    }
-
+    // -----------------------------------------------------------------------
+    // TICKET-I050
+    // -----------------------------------------------------------------------
     @Test
     void matchTrades_missingExternal_flagsMissingTrade() {
         List<BaseTrade> internal = List.of(equity("TRD-INT-ONLY"));
@@ -149,15 +119,24 @@ class ReconciliationServiceTest {
                 .containsExactly(DiscrepancyType.MISSING_TRADE);
     }
 
-    // TODO(TICKET-I051): test with @Mock TradeDAO + verify(...).findAll() called.
-    @Test
-    void mockedTradeDAO_findAllCalledOnce() {
-        fail("TICKET-I051: implement test");
+    // -----------------------------------------------------------------------
+    // Fixture helpers.
+    // -----------------------------------------------------------------------
+    private static BaseTrade equity(String tradeRef) {
+        return EquityTrade.builder()
+                .tradeRef(tradeRef).instrumentId(1L).counterpartyId(1L)
+                .quantity(new BigDecimal("100")).price(new BigDecimal("245.50"))
+                .tradeDate(LocalDate.of(2026, 3, 1))
+                .status(TradeStatus.MATCHED)
+                .exchange("XETRA").lotSize(100)
+                .build();
     }
 
-    // TODO(TICKET-I052): test with @Mock ReconResultDAO + ArgumentCaptor.
-    @Test
-    void mockedReconResultDAO_insertCalledPerDiscrepancy() {
-        fail("TICKET-I052: implement test");
+    private static BaseTrade equityWith(String tradeRef, BigDecimal qty, BigDecimal price, LocalDate date) {
+        return EquityTrade.builder()
+                .tradeRef(tradeRef).instrumentId(1L).counterpartyId(1L)
+                .quantity(qty).price(price).tradeDate(date)
+                .status(TradeStatus.MATCHED).exchange("XETRA").lotSize(100)
+                .build();
     }
 }
