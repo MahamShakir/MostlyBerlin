@@ -42,7 +42,7 @@ public class ReconResult {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status;
+    private Status status;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "discrepancy_type", nullable = false, length = 30)
@@ -59,14 +59,14 @@ public class ReconResult {
     private ReconResult(Builder b) {
         this.trade           = b.trade;
         this.discrepancyType = b.discrepancyType;
-        this.status          = String.valueOf(b.status != null ? b.status : Status.OPEN);
+        this.status          = b.status != null ? b.status : Status.OPEN;
         this.detectedAt      = b.detectedAt != null ? b.detectedAt : Instant.now();
         this.resolvedAt      = b.resolvedAt;
     }
 
     public Long getId()                        { return id; }
     public Trade getTrade()                      { return trade; }
-    public String getStatus()                  { return status; }
+    public Status getStatus()                  { return status; }
     public DiscrepancyType getDiscrepancyType(){ return discrepancyType; }
     public Instant getDetectedAt()             { return detectedAt; }
     public Instant getResolvedAt()             { return resolvedAt; }
@@ -90,12 +90,12 @@ public class ReconResult {
     }
 
     public void resolve() {
-        if ("RESOLVED".equals(this.status)) return;
-        this.status = "RESOLVED";
+        if (this.status == Status.RESOLVED) return;
+        this.status = Status.RESOLVED;
         this.resolvedAt = Instant.now();
     }
 
-    public boolean isOpen() { return "OPEN".equals(status); }
+    public boolean isOpen() { return this.status == Status.OPEN; }
 
     @Override
     public boolean equals(Object o) {

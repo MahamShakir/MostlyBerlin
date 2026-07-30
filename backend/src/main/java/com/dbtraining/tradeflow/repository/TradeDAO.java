@@ -4,6 +4,7 @@ import com.dbtraining.tradeflow.model.*;
 
 import javax.sql.DataSource;
 import java.sql.*;
+import java.sql.Date;
 import java.util.*;
 
 public class TradeDAO {

@@ -42,44 +42,44 @@ import java.util.Objects;
 public class ReconReportExporter {
     private static final String HEADER = "trade_ref,status,discrepancy_type,resolved_at";
 
-    public void exportReconReport(List<ReconResult> results, Path target) throws IOException {
-        Objects.requireNonNull(results, "results required");
-        Objects.requireNonNull(target, "target required");
+//    public void exportReconReport(List<ReconResult> results, Path target) throws IOException {
+//        Objects.requireNonNull(results, "results required");
+//        Objects.requireNonNull(target, "target required");
+//
+//        Path tmp = target.resolveSibling(target.getFileName() + ".tmp");
+//        if (tmp.getParent() != null) Files.createDirectories(tmp.getParent());
+//
+//        try (BufferedWriter w = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
+//            w.write(HEADER);
+//            w.newLine();
+//            for (ReconResult r : results) {
+//                w.write(rowFor(r));
+//                w.newLine();
+//            }
+//            w.flush();
+//        }
+//
+//        try {
+//            Files.move(tmp, target,
+//                    StandardCopyOption.REPLACE_EXISTING,
+//                    StandardCopyOption.ATOMIC_MOVE);
+//        } catch (IOException atomicFailed) {
+//            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+//        }
+//    }
 
-        Path tmp = target.resolveSibling(target.getFileName() + ".tmp");
-        if (tmp.getParent() != null) Files.createDirectories(tmp.getParent());
-
-        try (BufferedWriter w = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
-            w.write(HEADER);
-            w.newLine();
-            for (ReconResult r : results) {
-                w.write(rowFor(r));
-                w.newLine();
-            }
-            w.flush();
-        }
-
-        try {
-            Files.move(tmp, target,
-                    StandardCopyOption.REPLACE_EXISTING,
-                    StandardCopyOption.ATOMIC_MOVE);
-        } catch (IOException atomicFailed) {
-            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
-        }
-    }
-
-    private String rowFor(ReconResult r) {
-        String tradeRef = r.getTradeId() != null ? r.getTradeId().toString() : "";
-        String status = r.getStatus() != null ? r.getStatus() : "";
-        String discrepancy = r.getDiscrepancyType() != null ? r.getDiscrepancyType().name() : "";
-        Instant resolved = r.getResolvedAt();
-        String resolvedStr = resolved != null ? resolved.toString() : "";
-        return String.join(",",
-                escape(tradeRef),
-                escape(status),
-                escape(discrepancy),
-                escape(resolvedStr));
-    }
+//    private String rowFor(ReconResult r) {
+//        String tradeRef = r.getTradeId() != null ? r.getTradeId().toString() : "";
+//        String status = r.getStatus() != null ? r.getStatus() : "";
+//        String discrepancy = r.getDiscrepancyType() != null ? r.getDiscrepancyType().name() : "";
+//        Instant resolved = r.getResolvedAt();
+//        String resolvedStr = resolved != null ? resolved.toString() : "";
+//        return String.join(",",
+//                escape(tradeRef),
+//                escape(status),
+//                escape(discrepancy),
+//                escape(resolvedStr));
+//    }
 
     private String escape(String value) {
         if (value == null) return "";
