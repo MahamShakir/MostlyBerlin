@@ -156,4 +156,8 @@ public class TradeService {
         }
         trade.setStatus(TradeStatus.CANCELLED);
     }
+
+    public Page<TradeDto> findByTradeDateBetween(LocalDate from, LocalDate to, Pageable pageable) {
+        return null;
+    }
 }
