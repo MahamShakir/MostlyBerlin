@@ -1,8 +1,17 @@
 package com.dbtraining.tradeflow.controller;
 
+import com.dbtraining.tradeflow.dto.ReconResultDto;
 import com.dbtraining.tradeflow.dto.ReconSummary;
+import com.dbtraining.tradeflow.model.ReconResult;
+import com.dbtraining.tradeflow.service.ReconciliationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -29,27 +38,41 @@ import java.util.Map;
 @Tag(name = "Reconciliation", description = "Run recon + manage breaks")
 public class ReconController {
 
+    private final ReconciliationService reconService;
+
+    public ReconController (ReconciliationService reconService) {
+        this.reconService = reconService;
+    }
+
     @Operation(summary = "Trigger a reconciliation run")
     @PostMapping("/run")
     public ReconSummary run() {
         // TODO(TICKET-I072): inject ReconciliationService, call run(), return summary.
-        throw new UnsupportedOperationException("TICKET-I072");
+        return reconService.runForAll();
     }
 
     @Operation(summary = "List reconciliation results")
     @GetMapping("/results")
-    public List<Map<String, Object>> listResults(
-            @RequestParam(required = false, defaultValue = "OPEN") String status) {
+    public Page<ReconResultDto> listResults(
+            @RequestParam(required = false, defaultValue = "OPEN") String status,
+            @RequestParam(required = false) Long counterpartyId,
+            @PageableDefault(size = 20) Pageable pageable) {
         // TODO(TICKET-I073): paginated query via ReconBreakRepository
         //   (or JdbcTemplate JOIN onto `trades` to surface trade_ref).
         //   Day-1 empty list keeps the UI working until you've built recon_breaks.
-        return Collections.emptyList();
+        ReconResult.Status parsed = ReconResult.Status.valueOf(status.toUpperCase());
+        return reconService.listBreaks(parsed, counterpartyId, pageable);
     }
 
     @Operation(summary = "Mark a break as resolved")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Resolved (idempotent)"),
+            @ApiResponse(responseCode = "404", description = "Break not found")
+    })
     @PutMapping("/{id}/resolve")
-    public void resolve(@PathVariable Long id) {
+    public ResponseEntity<Void> resolve(@PathVariable Long id) {
         // TODO(TICKET-I074): update status to RESOLVED, set resolved_at, write audit log.
-        throw new UnsupportedOperationException("TICKET-I074");
+        reconService.resolveBreak(id);
+        return ResponseEntity.noContent().build();
     }
 }

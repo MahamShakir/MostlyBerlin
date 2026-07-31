@@ -2,10 +2,20 @@ package com.dbtraining.tradeflow.service;
 
 import com.dbtraining.tradeflow.dto.Discrepancy;
 import com.dbtraining.tradeflow.dto.ReconReport;
+import com.dbtraining.tradeflow.dto.ReconResultDto;
 import com.dbtraining.tradeflow.dto.ReconSummary;
+import com.dbtraining.tradeflow.exception.TradeNotFoundException;
 import com.dbtraining.tradeflow.model.BaseTrade;
 import com.dbtraining.tradeflow.model.DiscrepancyType;
+import com.dbtraining.tradeflow.model.ReconResult;
+import com.dbtraining.tradeflow.repository.ReconResultRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.instrument.Timer;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,6 +50,27 @@ import java.util.stream.Collectors;
 
 @Service
 public class ReconciliationService {
+    private final ReconResultRepository reconResultRepository;
+    private final Timer reconRunTimer;
+    private final Counter reconResolvedCounter;
+
+    public ReconciliationService(ReconResultRepository reconResultRepository,
+                                 MeterRegistry meterRegistry) {
+
+        this.reconResultRepository = reconResultRepository;
+
+        // ------------------------------------------------------------
+        // TICKET-I079 — recon latency timer (with p50 / p95 / p99)
+        // ------------------------------------------------------------
+        this.reconRunTimer = meterRegistry.timer("tradeflow_recon_run_seconds");
+
+        // ------------------------------------------------------------
+        // TICKET-I074 — resolved-break counter (idempotency-safe)
+        // ------------------------------------------------------------
+        this.reconResolvedCounter = Counter.builder("tradeflow_recon_resolved_total")
+                .description("Count of recon breaks marked RESOLVED")
+                .register(meterRegistry);
+    }
 
     // TODO(TICKET-I034): constructor / dependencies (Day 5 will add repos here).
 
@@ -124,5 +155,59 @@ public class ReconciliationService {
         s.breakdownByType().forEach((type, count) ->
                 sb.append(String.format("    - %-20s %d%n", type, count)));
         return sb.toString();
+    }
+
+    // ------------------------------------------------------------
+    // TICKET-I072
+    // ------------------------------------------------------------
+    @Transactional(readOnly = true)
+    public ReconSummary runForAll() {
+        return reconRunTimer.record(() -> {
+            long matched   = reconResultRepository.countByStatus(ReconResult.Status.RESOLVED);
+            long unmatched = reconResultRepository.countByStatus(ReconResult.Status.OPEN);
+
+            Map<DiscrepancyType, Integer> breakdown = new EnumMap<>(DiscrepancyType.class);
+            for (DiscrepancyType t : DiscrepancyType.values()) breakdown.put(t, 0);
+            for (ReconResult r : reconResultRepository.findByStatus(ReconResult.Status.OPEN)) {
+                breakdown.merge(r.getDiscrepancyType(), 1, Integer::sum);
+            }
+
+            long total = matched + unmatched;
+            return new ReconSummary(
+                    (int) total,
+                    (int) total,
+                    (int) matched,
+                    (int) unmatched,
+                    breakdown);
+        });
+    }
+    // ------------------------------------------------------------
+    // TICKET-I073
+    // ------------------------------------------------------------
+    @Transactional(readOnly = true)
+    public Page<ReconResultDto> listBreaks(ReconResult.Status status,
+                                           Long counterpartyId,
+                                           Pageable pageable) {
+        Page<ReconResult> page = (counterpartyId == null)
+                ? reconResultRepository.findByStatus(status, pageable)
+                : reconResultRepository.findByStatusAndCounterpartyId(status, counterpartyId, pageable);
+        return page.map(ReconResultDto::from);
+    }
+    // ------------------------------------------------------------
+    // TICKET-I074
+    // ------------------------------------------------------------
+    @Transactional
+    public void resolveBreak(Long id) {
+        ReconResult r = reconResultRepository.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException("Recon break " + id + " not found"));
+
+        if (r.getStatus() == ReconResult.Status.RESOLVED) {
+            return;  // idempotent
+        }
+//        r.setStatus(ReconResult.Status.RESOLVED);
+//        r.setResolvedAt(Instant.now());
+        r.resolve();
+        reconResolvedCounter.increment();
+        // Audit row is written by the Day-2 DB trigger on UPDATE.
     }
 }
