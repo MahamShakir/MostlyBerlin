@@ -62,7 +62,11 @@ public class ReconciliationService {
         // ------------------------------------------------------------
         // TICKET-I079 — recon latency timer (with p50 / p95 / p99)
         // ------------------------------------------------------------
-        this.reconRunTimer = meterRegistry.timer("tradeflow_recon_run_seconds");
+        this.reconRunTimer = Timer.builder("tradeflow_recon_run_seconds")
+                .description("Time taken for a full reconciliation run")
+                .publishPercentiles(0.5, 0.95, 0.99)
+                .publishPercentileHistogram()
+                .register(meterRegistry);
 
         // ------------------------------------------------------------
         // TICKET-I074 — resolved-break counter (idempotency-safe)
