@@ -8,7 +8,7 @@
 // ============================================================================
 
 const API_BASE = "http://localhost:8080/api/v1";
-const AUTH_HEADER = "Basic " + btoa("trader:trader-pass");
+const AUTH_HEADER = "Basic " + btoa("trader:trader-pw");
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("trade-form").addEventListener("submit", onSubmit);
@@ -30,6 +30,9 @@ async function onSubmit(evt) {
 
     if (!validate(data)) return;
 
+    const submitBtn = form.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+
     try {
         const res = await fetch(`${API_BASE}/trades`, {
             method: "POST",
@@ -38,7 +41,7 @@ async function onSubmit(evt) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                tradeRef:        data.tradeRef,
+                tradeRef:        data.tradeRef.trim(),
                 instrumentId:    Number(data.instrumentId),
                 counterpartyId:  Number(data.counterpartyId),
                 quantity:        data.quantity,
@@ -49,25 +52,41 @@ async function onSubmit(evt) {
 
         if (!res.ok) {
             const body = await res.json().catch(() => ({}));
+            // Surface field-level errors from the GlobalExceptionHandler envelope.
+            if (body.details) {
+                Object.entries(body.details).forEach(([f, msg]) => setError(f, msg));
+            }
             throw new Error(body.message || `HTTP ${res.status}`);
         }
 
         showToast("Trade created — redirecting…");
-        setTimeout(() => location.href = "trades.html", 800);
+        setTimeout(() => { location.href = "trades.html"; }, 800);
     } catch (e) {
         showToast("Error: " + e.message, true);
+    } finally {
+        submitBtn.disabled = false;
     }
 }
 
 function validate(data) {
-    // TODO(TICKET-I095): set/clear each .field-error[data-for=...] span.
     clearErrors();
     let ok = true;
 
-    if (Number(data.quantity) <= 0) { setError("quantity", "must be > 0"); ok = false; }
-    if (Number(data.price)    <= 0) { setError("price",    "must be > 0"); ok = false; }
-    if (!data.tradeDate)             { setError("tradeDate", "required");   ok = false; }
-    if (data.tradeDate && new Date(data.tradeDate) > new Date()) {
+    if (!data.tradeRef || !data.tradeRef.trim()) {
+        setError("tradeRef", "required"); ok = false;
+    }
+    if (!data.instrumentId)   { setError("instrumentId",   "required"); ok = false; }
+    if (!data.counterpartyId) { setError("counterpartyId", "required"); ok = false; }
+
+    if (!data.quantity || Number(data.quantity) <= 0) {
+        setError("quantity", "must be > 0"); ok = false;
+    }
+    if (!data.price || Number(data.price) <= 0) {
+        setError("price", "must be > 0"); ok = false;
+    }
+    if (!data.tradeDate) {
+        setError("tradeDate", "required"); ok = false;
+    } else if (new Date(data.tradeDate) > new Date()) {
         setError("tradeDate", "must not be in the future"); ok = false;
     }
 
@@ -77,10 +96,12 @@ function validate(data) {
 function clearErrors() {
     document.querySelectorAll(".field-error").forEach(s => s.textContent = "");
 }
+
 function setError(field, msg) {
     const el = document.querySelector(`.field-error[data-for="${field}"]`);
     if (el) el.textContent = msg;
 }
+
 function showToast(msg, isError = false) {
     const t = document.getElementById("form-feedback");
     t.textContent = msg;
