@@ -69,7 +69,10 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
-
+  prometheus:
+    metrics:
+      export:
+        step: 10s   
 # ============================================================================
 # Springdoc / Swagger — TICKET-I063
 # ============================================================================

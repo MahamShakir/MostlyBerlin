@@ -55,13 +55,20 @@ public class TradeService {
             TradeStatus.MATCHED,   Set.of(TradeStatus.SETTLED, TradeStatus.CANCELLED),
             TradeStatus.UNMATCHED, Set.of(TradeStatus.MATCHED, TradeStatus.CANCELLED)
     );
+    private final Counter tradesCreatedCounter;
 
     public TradeService(TradeRepository tradeRepository,
                         InstrumentRepository instrumentRepository,
-                        CounterpartyRepository counterpartyRepository) {
-        this.tradeRepository       = tradeRepository;
-        this.instrumentRepository  = instrumentRepository;
+                        CounterpartyRepository counterpartyRepository,
+                        TradeEventProducer eventProducer,
+                        MeterRegistry meterRegistry) {
+        this.tradeRepository        = tradeRepository;
+        this.instrumentRepository   = instrumentRepository;
         this.counterpartyRepository = counterpartyRepository;
+        this.eventProducer          = eventProducer;
+        this.tradesCreatedCounter = Counter.builder("tradeflow_trades_created_total")
+                .description("Total trades successfully created via POST /api/v1/trades")
+                .register(meterRegistry);
     }
 
     @Transactional(readOnly = true)
@@ -122,6 +129,7 @@ public class TradeService {
                 .build();
 
         Trade saved = tradeRepository.save(trade);
+        tradesCreatedCounter.increment();
         return TradeDto.from(saved);
     }
 
