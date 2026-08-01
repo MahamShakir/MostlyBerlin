@@ -23,13 +23,49 @@ document.addEventListener("DOMContentLoaded", () => {
  *
  * TODO(TICKET-I096): on valid, POST /api/v1/trades, show toast on success.
  */
-function onSubmit(evt) {
+async function onSubmit(evt) {
     evt.preventDefault();
     const form = evt.target;
     const data = Object.fromEntries(new FormData(form).entries());
+
     if (!validate(data)) return;
-    // I096 adds the POST here.
-    console.log("Validated form data:", data);
+
+    const submitBtn = form.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+
+    try {
+        const res = await fetch(`${API_BASE}/trades`, {
+            method: "POST",
+            headers: {
+                "Authorization": AUTH_HEADER,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                tradeRef:        data.tradeRef.trim(),
+                instrumentId:    Number(data.instrumentId),
+                counterpartyId:  Number(data.counterpartyId),
+                quantity:        data.quantity,
+                price:           data.price,
+                tradeDate:       data.tradeDate
+            })
+        });
+
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            // Surface field-level errors from the GlobalExceptionHandler envelope.
+            if (body.details) {
+                Object.entries(body.details).forEach(([f, msg]) => setError(f, msg));
+            }
+            throw new Error(body.message || `HTTP ${res.status}`);
+        }
+
+        showToast("Trade created — redirecting…");
+        setTimeout(() => { location.href = "trades.html"; }, 800);
+    } catch (e) {
+        showToast("Error: " + e.message, true);
+    } finally {
+        submitBtn.disabled = false;
+    }
 }
 
 function validate(data) {
