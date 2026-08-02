@@ -68,8 +68,8 @@ export const cancelTrade     = (id) =>
 export const runRecon        = () =>
     request('/recon/run', { method: 'POST' });
 
-export const getReconResults = (params = {}, signal) =>
-    request('/recon/results?' + new URLSearchParams(params).toString(), { signal });
+export const getReconResults = (params = {}) =>
+    request('/recon/results?' + new URLSearchParams(params).toString());
 
 export const resolveBreak    = (id) =>
     request(`/recon/${id}/resolve`, { method: 'PUT' });
