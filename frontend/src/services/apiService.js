@@ -52,8 +52,8 @@ async function request(path, options = {}) {
 }
 
 // ----- Trades --------------------------------------------------------------
-export const getTrades       = (params = {}) =>
-    request('/trades?' + new URLSearchParams(params).toString());
+export const getTrades       = (params = {}, signal) =>
+    request('/trades?' + new URLSearchParams(params).toString(), { signal });
 
 export const createTrade     = (body) =>
     request('/trades', { method: 'POST', body: JSON.stringify(body) });
@@ -68,8 +68,8 @@ export const cancelTrade     = (id) =>
 export const runRecon        = () =>
     request('/recon/run', { method: 'POST' });
 
-export const getReconResults = (params = {}) =>
-    request('/recon/results?' + new URLSearchParams(params).toString());
+export const getReconResults = (params = {}, signal) =>
+    request('/recon/results?' + new URLSearchParams(params).toString(), { signal });
 
 export const resolveBreak    = (id) =>
     request(`/recon/${id}/resolve`, { method: 'PUT' });
