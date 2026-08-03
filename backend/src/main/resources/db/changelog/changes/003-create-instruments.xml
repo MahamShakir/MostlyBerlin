@@ -23,6 +23,9 @@
             <column name="currency" type="CHAR(3)">
                 <constraints nullable="false"/>
             </column>
+            <column name="isin" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
 
         <sql>
