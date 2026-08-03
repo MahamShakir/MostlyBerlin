@@ -41,22 +41,43 @@ spring:
         format_sql: true
 
   # ----------------------------------------------------------------------
-  # Kafka — TICKET-I113 (uncomment after adding the spring-kafka dep)
+  # Kafka — TICKET-I113 (Day 9) + TICKET-I120 (observability)
   # ----------------------------------------------------------------------
-  # kafka:
-  #   bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-  #   consumer:
-  #     group-id: ${KAFKA_CONSUMER_GROUP:recon-group}
-  #     key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-  #     value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-  #     properties:
-  #       spring.json.trusted.packages: "com.dbtraining.tradeflow.*"
-  #   producer:
-  #     key-serializer: org.apache.kafka.common.serialization.StringSerializer
-  #     value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  # bootstrap-servers  → env-driven, falls back to localhost for dev.
+  # trusted.packages   → JsonDeserializer refuses to instantiate classes
+  #                      outside this list (deserialization-gadget guard).
+  # value.default.type → target type when the incoming payload has no
+  #                      __TypeId__ header (set add.type.headers=false below).
+  # producer.acks=all  → wait for all in-sync replicas before ack — the
+  #                      strong durability posture. Combines with
+  #                      idempotence for exactly-once within a partition.
+  # ack-mode: record   → at-least-once — commit offset after every
+  #                      successful handler return. I119's audit needs this.
+  # observation-enabled → TICKET-I120: turn on Spring-Kafka Micrometer
+  #                      integration so kafka_consumer_fetch_manager_records_lag
+  #                      appears on /actuator/prometheus for I121's dashboard.
+  # ----------------------------------------------------------------------
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.dbtraining.tradeflow.*"
+        spring.json.value.default.type: "com.dbtraining.tradeflow.dto.TradeEvent"
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    listener:
+      ack-mode: record            # at-least-once
+      observation-enabled: true   # Micrometer metrics for I120 / I121
 
 # ============================================================================
-# Actuator — TICKET-I078
+# Actuator — TICKET-I078 (Day 6) + verified for TICKET-I120 (Day 9)
 # ============================================================================
 management:
   endpoints:
@@ -69,10 +90,7 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
-  prometheus:
-    metrics:
-      export:
-        step: 10s   
+
 # ============================================================================
 # Springdoc / Swagger — TICKET-I063
 # ============================================================================
@@ -83,7 +101,7 @@ springdoc:
     path: /swagger-ui.html
 
 # ============================================================================
-# Custom app settings
+# Custom app settings — Day 9 Kafka topic names (used by producer + consumers)
 # ============================================================================
 tradeflow:
   kafka:
