@@ -41,15 +41,22 @@ public interface ReconResultRepository extends JpaRepository<ReconResult, Long> 
     List<ReconResult> findByTradeId(Long tradeId);
 
     Page<ReconResult> findByStatus(ReconResult.Status status, Pageable pageable);
+
+    @Query("""
+            select r from ReconResult r
+              join r.trade t
+            where r.status = :status
+              and t.counterparty.id = :counterpartyId
+            """)
     Page<ReconResult> findByStatusAndCounterpartyId(ReconResult.Status status,
                                                     Long counterpartyId,
                                                     Pageable pageable);
 
-    @Query("""
-           select r from ReconResult r
-             join r.trade t
-           where r.status = com.dbtraining.tradeflow.model.ReconResult$Status.OPEN
-             and t.counterparty.id = :counterpartyId
-           """)
-    List<ReconResult> findUnresolvedByCounterparty(@Param("counterpartyId") Long counterpartyId);
+//    @Query("""
+//           select r from ReconResult r
+//             join r.trade t
+//           where r.status = ReconResult.Status.OPEN
+//             and t.counterparty.id = :counterpartyId
+//           """)
+//    List<ReconResult> findUnresolvedByCounterparty(@Param("counterpartyId") Long counterpartyId);
 }

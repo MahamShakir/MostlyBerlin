@@ -1,6 +1,7 @@
 package com.dbtraining.tradeflow.kafka;
 
 import com.dbtraining.tradeflow.dto.TradeEvent;
+import org.springframework.stereotype.Service;
 
 /**
  * ============================================================================
@@ -39,6 +40,7 @@ import com.dbtraining.tradeflow.dto.TradeEvent;
  *          @TransactionalEventListener), or accept eventual consistency.
  * ============================================================================
  */
+@Service
 public class TradeEventProducer {
 
     public void publish(TradeEvent event) {
