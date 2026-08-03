@@ -78,6 +78,73 @@ public class TradeControllerTest {
         verify(tradeService).createTrade(any());
     }
 
+
+    // ------------------------------------------------------------------------
+    // TICKET-I083 — validation failures (400 with envelope shape)
+    // ------------------------------------------------------------------------
+    @Test
+    @WithMockUser(roles = "TRADER")
+    void createTrade_missingQuantity_returns400() throws Exception {
+        String body = """
+                {
+                  "tradeRef": "TRD-2026-0002",
+                  "instrumentId": 1,
+                  "counterpartyId": 1,
+                  "price": 250.50,
+                  "tradeDate": "2026-03-01"
+                }
+                """;
+        mvc.perform(post("/api/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details.quantity").exists());
+    }
+
+    @Test
+    @WithMockUser(roles = "TRADER")
+    void createTrade_negativeQuantity_returns400() throws Exception {
+        String body = """
+                {
+                  "tradeRef": "TRD-2026-0003",
+                  "instrumentId": 1,
+                  "counterpartyId": 1,
+                  "quantity": -100,
+                  "price": 250.50,
+                  "tradeDate": "2026-03-01"
+                }
+                """;
+        mvc.perform(post("/api/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details.quantity",
+                        org.hamcrest.Matchers.containsString("must be greater than 0")));
+    }
+
+    @Test
+    @WithMockUser(roles = "TRADER")
+    void createTrade_futureTradeDate_returns400() throws Exception {
+        String body = """
+                {
+                  "tradeRef": "TRD-2099-0001",
+                  "instrumentId": 1,
+                  "counterpartyId": 1,
+                  "quantity": 100,
+                  "price": 250.50,
+                  "tradeDate": "2099-01-01"
+                }
+                """;
+        mvc.perform(post("/api/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details.tradeDate").exists());
+    }
+
     static TradeDto sampleDto(Long id, String ref) {
         return new TradeDto(
                 id, ref, 1L, 1L,
