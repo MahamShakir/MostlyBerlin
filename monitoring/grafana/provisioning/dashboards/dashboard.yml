@@ -13,7 +13,11 @@ providers:
   - name: TradeFlow dashboards
     type: file
     folder: TradeFlow
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
     options:
-      # TODO(TICKET-I080 + I121): drop your exported dashboard JSON files
+      # (TICKET-I080 + I121): drop your exported dashboard JSON files
       # into the same directory as this YAML (or update `path`).
       path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false
