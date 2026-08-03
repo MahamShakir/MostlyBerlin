@@ -145,6 +145,69 @@ public class TradeControllerTest {
                 .andExpect(jsonPath("$.details.tradeDate").exists());
     }
 
+
+    // ------------------------------------------------------------------------
+    // TICKET-I084 — paginated GET returns Page envelope
+    // ------------------------------------------------------------------------
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    void list_paginated_returnsPageEnvelope() throws Exception {
+        Pageable pageable = PageRequest.of(0, 5);
+        Page<TradeDto> page = new PageImpl<>(
+                List.of(sampleDto(1L, "TRD-2026-0001"),
+                        sampleDto(2L, "TRD-2026-0002"),
+                        sampleDto(3L, "TRD-2026-0003")),
+                pageable, 12);
+        when(tradeService.findAll(any(Pageable.class))).thenReturn(page);
+
+        mvc.perform(get("/api/v1/trades?page=0&size=5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(3))
+                .andExpect(jsonPath("$.totalElements").value(12))
+                .andExpect(jsonPath("$.size").value(5))
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.totalPages").value(3));
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    void list_withStatusFilter_delegatesToFilteredFinder() throws Exception {
+        when(tradeService.findPageByStatus(eq(TradeStatus.UNMATCHED), any()))
+                .thenReturn(Page.empty());
+
+        mvc.perform(get("/api/v1/trades?status=UNMATCHED"))
+                .andExpect(status().isOk());
+
+        verify(tradeService).findPageByStatus(eq(TradeStatus.UNMATCHED), any());
+    }
+
+    @Test
+    void list_withoutAuth_returns401() throws Exception {
+        mvc.perform(get("/api/v1/trades"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    void viewer_cannotPost_returns403() throws Exception {
+        String body = """
+                {
+                  "tradeRef": "TRD-2026-0099",
+                  "instrumentId": 1,
+                  "counterpartyId": 1,
+                  "quantity": 1,
+                  "price": 1,
+                  "tradeDate": "2026-03-01"
+                }
+                """;
+        mvc.perform(post("/api/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+    }
+
+
     static TradeDto sampleDto(Long id, String ref) {
         return new TradeDto(
                 id, ref, 1L, 1L,
