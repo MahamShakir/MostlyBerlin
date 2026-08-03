@@ -1,17 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 ============================================================================
-  TradeFlow backend — pom.xml
+  TradeFlow backend — pom.xml (Day 9 solved)
 ============================================================================
-  WHAT:    Maven build descriptor for the Spring Boot recon-service.
-  HOW:     Spring Boot starter parent + the dependencies you'll add over
-           Days 2-9. Most are commented out — uncomment as each ticket needs.
-  WHY:     One source of truth for build, dependencies, plugins, and the
-           Java version.
-  OBSERVE: After `./mvnw clean compile` you should see
-           "BUILD SUCCESS" and no surprise warnings.
-============================================================================
-  TODO(TICKET-I054): keep this `pom.xml` in sync as you add starters.
+  Day 9 changes vs starter:
+    - TICKET-I112: uncommented spring-kafka + spring-kafka-test dependencies.
+    - TICKET-I120: micrometer-registry-prometheus is already declared in the
+      starter (Day 6 TICKET-I079); no change needed here — verify only.
 ============================================================================
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -104,6 +99,8 @@
 
         <!-- ============================================================ -->
         <!-- Day 6 — Prometheus metrics (TICKET-I079)                     -->
+        <!-- Day 9 TICKET-I120 relies on this being on the classpath so   -->
+        <!-- Kafka Micrometer metrics surface at /actuator/prometheus.    -->
         <!-- ============================================================ -->
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -116,9 +113,9 @@
 
         <!-- ============================================================ -->
         <!-- Day 9 — Kafka (TICKET-I112)                                  -->
+        <!-- Uncommented on Day 9 so KafkaTemplate, @KafkaListener and    -->
+        <!-- JsonSerializer/JsonDeserializer land on the classpath.       -->
         <!-- ============================================================ -->
-        <!-- TODO(TICKET-I112): uncomment to enable Kafka. -->
-        <!--
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
@@ -128,7 +125,6 @@
             <artifactId>spring-kafka-test</artifactId>
             <scope>test</scope>
         </dependency>
-        -->
 
         <!-- ============================================================ -->
         <!-- Day 8 — Distributed tracing (Zipkin, Sprint 3)               -->
@@ -173,6 +169,22 @@
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-test-autoconfigure</artifactId>
+        </dependency>
 
     </dependencies>
 
@@ -182,7 +194,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
-	    
+
             <!-- TICKET-I135: coverage threshold in CI -->
             <plugin>
                 <groupId>org.jacoco</groupId>
@@ -201,8 +213,6 @@
                             <goal>report</goal>
                         </goals>
                     </execution>
-                    <!-- TODO(TICKET-I135): add a 'check' execution that fails
-                         the build if line coverage on service.* < 70%. -->
                 </executions>
             </plugin>
         </plugins>
