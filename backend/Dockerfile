@@ -1,47 +1,40 @@
 # ============================================================================
-# backend/Dockerfile — TICKET-I125 (Day 10)
-# ============================================================================
-# WHAT:    Multi-stage Dockerfile for the Spring Boot recon-service.
-# HOW:     Stage 1 builds the JAR with Maven. Stage 2 runs it on a slim JRE.
-# WHY:     Keeps the runtime image < 250 MB and isolates build tools from
-#          the final container.
-# OBSERVE: `docker build .` succeeds; `docker run -p 8080:8080 <image>`
-#          boots and `/actuator/health` returns UP.
-# ============================================================================
-# TODO(TICKET-I125):
-#   1) Make the build cache deps separately from source — copy pom.xml first
-#      and run `mvn dependency:go-offline` BEFORE copying src/.
-#   2) Use eclipse-temurin:17-jre-alpine as the final base (small).
-#   3) ENTRYPOINT java -jar /app/app.jar (no shell).
+# backend/Dockerfile -- TICKET-I125
+# Multi-stage: Maven builder -> JRE runtime. Final image ~180 MB.
 # ============================================================================
 
 # ---- Stage 1: build -------------------------------------------------------
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /workspace
 
-# TODO(TICKET-I125): cache deps layer.
-# COPY pom.xml .
-# RUN mvn -B -e dependency:go-offline
+# Copy pom.xml FIRST so the dependency layer caches independently of source.
+COPY pom.xml ./
+RUN mvn -B -e dependency:go-offline
 
-COPY pom.xml .
+# Now copy source and build the JAR.
 COPY src ./src
-
 RUN mvn -B -e clean package -DskipTests
 
-# ---- Stage 2: runtime -----------------------------------------------------
+# ---- Stage 2: lean runtime ------------------------------------------------
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Non-root user for security
 RUN addgroup -S app && adduser -S app -G app
+
+# wget is needed by HEALTHCHECK (alpine ships without curl by default).
+RUN apk add --no-cache wget
+
 USER app
 
 COPY --from=build /workspace/target/*.jar /app/app.jar
 
 EXPOSE 8080
 
-# Spring Boot probes
-HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=5 \
-    CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+# Liveness probe -- `docker ps` shows `(healthy)` once /actuator/health returns 200.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD wget -qO- http://localhost:8080/actuator/health | grep -q '"status":"UP"' || exit 1
 
+# -XX:+UseContainerSupport lets the JVM read cgroup limits so heap sizing
+# honours the container's memory cap (default on JDK 17 but explicit is safer).
 ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-jar", "/app/app.jar"]
