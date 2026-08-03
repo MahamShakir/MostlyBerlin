@@ -1,6 +1,7 @@
-package com.dbtraining.tradeflow.controller;
+package com.dbtraining.tradeflow.service;
 
 import com.dbtraining.tradeflow.config.SecurityConfig;
+import com.dbtraining.tradeflow.controller.TradeController;
 import com.dbtraining.tradeflow.dto.TradeDto;
 import com.dbtraining.tradeflow.exception.GlobalExceptionHandler;
 import com.dbtraining.tradeflow.model.TradeStatus;
