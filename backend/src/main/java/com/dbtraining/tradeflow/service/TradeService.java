@@ -144,6 +144,11 @@ public class TradeService {
 
         Trade saved = tradeRepository.save(trade);
         tradesCreatedCounter.increment();
+        eventProducer.publish(new TradeEvent(
+                saved.getTradeRef(),
+                TradeEvent.Action.CREATED,
+                java.time.Instant.now(),
+                TradeDto.from(saved)));
         return TradeDto.from(saved);
     }
 
@@ -162,6 +167,11 @@ public class TradeService {
                     "Illegal transition " + trade.getStatus() + " -> " + newStatus);
         }
         trade.setStatus(newStatus);
+        eventProducer.publish(new TradeEvent(
+                trade.getTradeRef(),
+                TradeEvent.Action.UPDATED,
+                java.time.Instant.now(),
+                TradeDto.from(trade)));
         return TradeDto.from(trade);
     }
 
@@ -177,6 +187,11 @@ public class TradeService {
             throw new IllegalStateException("Trade " + id + " is SETTLED — cannot cancel");
         }
         trade.setStatus(TradeStatus.CANCELLED);
+        eventProducer.publish(new TradeEvent(
+                trade.getTradeRef(),
+                TradeEvent.Action.CANCELLED,
+                java.time.Instant.now(),
+                TradeDto.from(trade)));
     }
 
     public Page<TradeDto> findByTradeDateBetween(LocalDate from, LocalDate to, Pageable pageable) {
