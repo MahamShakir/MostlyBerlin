@@ -5,26 +5,15 @@
  * WHAT:    Recon-breaks page.
  * WHY:     Where Ops users actually resolve breaks.
  * ============================================================================
- *
- *  TODO(TICKET-I107):
- *    - filter pills All / OPEN / RESOLVED
- *    - resolve button calls apiService.resolveBreak(id)
- *    - optimistic UI: mark row resolved locally, rollback on error
- * ============================================================================
  */
 
  import { useState } from 'react';
  import StatusBadge from '../components/StatusBadge.jsx';
  import { useReconResults } from '../hooks/useReconResults.js';
  import { resolveBreak } from '../services/apiService.js';
- import { useBreaks } from '../context/BreakContext.jsx';
+ import { ResolveBreakModal } from '../components/ResolveBreakModal.jsx';
 
  export default function Recon() {
-     const {
-        dispatch
-    } = useBreaks();
-
-
     const [filter, setFilter] = useState('OPEN');
 
     const {
@@ -34,95 +23,80 @@
         refetch
     } = useReconResults(filter);
  
-     const [optimistic, setOptimistic] = useState({});
+    const [modalBreak, setModalBreak] = useState(null);
  
-     const doResolve = async (id) => {
-         setOptimistic(prev => ({
-             ...prev,
-             [id]: 'RESOLVED'
-         }));
+    const handleConfirm = async (note) => {
+        if (!modalBreak) throw new Error('no break selected');
+        await resolveBreak(modalBreak.id, { note });
+        await refetch();
+    };
  
-         try {
+    return (
+        <>
+            <h1>Reconciliation Breaks</h1>
 
-            dispatch({
-                type: "RESOLVE"
-            });
-        
-        
-            await resolveBreak(id);
-        
-            refetch();
-        
-        } catch (e) {
-             setOptimistic(prev => {
-                 const next = { ...prev };
-                 delete next[id];
-                 return next;
-             });
- 
-             window.alert('Resolve failed: ' + e.message);
-         }
-     };
- 
-     return (
-         <>
-             <h1>Reconciliation Breaks</h1>
- 
-             <div className="filters">
-                 {['OPEN', 'RESOLVED', 'SUPPRESSED'].map(s => (
-                     <button
-                         key={s}
-                         className={filter === s ? 'active' : ''}
-                         onClick={() => setFilter(s)}
-                     >
-                         {s}
-                     </button>
-                 ))}
-             </div>
- 
-             {loading && <div className="loading">Loading…</div>}
- 
-             {error && <div className="error">{error.message}</div>}
- 
-             <table className="data-table">
-                 <thead>
-                     <tr>
-                         <th>Trade Ref</th>
-                         <th>Discrepancy</th>
-                         <th>Status</th>
-                         <th>Detected</th>
-                         <th>Action</th>
-                     </tr>
-                 </thead>
- 
-                 <tbody>
-                     {results.map(r => {
-                         const status = optimistic[r.id] || r.status;
- 
-                         const detected = r.detectedAt
-                             ? new Date(r.detectedAt).toLocaleString('en-GB')
-                             : '—';
- 
-                         return (
-                             <tr key={r.id}>
-                                 <td>{r.tradeRef ?? r.tradeId ?? '—'}</td>
-                                 <td>{r.discrepancyType ?? '—'}</td>
-                                 <td>
-                                     <StatusBadge status={status} />
-                                 </td>
-                                 <td>{detected}</td>
-                                 <td>
-                                     {status === 'OPEN' && (
-                                         <button onClick={() => doResolve(r.id)}>
-                                             Resolve
-                                         </button>
-                                     )}
-                                 </td>
-                             </tr>
-                         );
-                     })}
-                 </tbody>
-             </table>
-         </>
-     );
+            <div className="filters">
+                {['OPEN', 'RESOLVED', 'SUPPRESSED'].map(s => (
+                    <button
+                        key={s}
+                        className={filter === s ? 'active' : ''}
+                        onClick={() => setFilter(s)}
+                    >
+                        {s}
+                    </button>
+                ))}
+            </div>
+
+            {loading && <div className="loading">Loading…</div>}
+
+            {error && <div className="error">{error.message}</div>}
+
+            <table className="data-table">
+                <thead>
+                    <tr>
+                        <th>Trade Ref</th>
+                        <th>Discrepancy</th>
+                        <th>Status</th>
+                        <th>Detected</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {results.map(r => {
+                        const status = r.status;
+
+                        const detected = r.detectedAt
+                            ? new Date(r.detectedAt).toLocaleString('en-GB')
+                            : '—';
+
+                        return (
+                            <tr key={r.id}>
+                                <td>{r.tradeRef ?? r.tradeId ?? '—'}</td>
+                                <td>{r.discrepancyType ?? '—'}</td>
+                                <td>
+                                    <StatusBadge status={status} />
+                                </td>
+                                <td>{detected}</td>
+                                <td>
+                                    {status === 'OPEN' && (
+                                        <button onClick={() => setModalBreak(r)}>
+                                            Resolve
+                                        </button>
+                                    )}
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+
+            <ResolveBreakModal
+                open={!!modalBreak}
+                breakId={modalBreak?.id}
+                onClose={() => setModalBreak(null)}
+                onConfirm={handleConfirm}
+            />
+        </>
+    );
  }
