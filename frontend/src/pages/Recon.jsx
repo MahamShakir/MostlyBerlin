@@ -17,10 +17,22 @@
  import StatusBadge from '../components/StatusBadge.jsx';
  import { useReconResults } from '../hooks/useReconResults.js';
  import { resolveBreak } from '../services/apiService.js';
- 
+ import { useBreaks } from '../context/BreakContext.jsx';
+
  export default function Recon() {
-     const [filter, setFilter] = useState('OPEN');
-     const { results, loading, error, refetch } = useReconResults(filter);
+     const {
+        dispatch
+    } = useBreaks();
+
+
+    const [filter, setFilter] = useState('OPEN');
+
+    const {
+        results,
+        loading,
+        error,
+        refetch
+    } = useReconResults(filter);
  
      const [optimistic, setOptimistic] = useState({});
  
@@ -31,9 +43,17 @@
          }));
  
          try {
-             await resolveBreak(id);
-             refetch();
-         } catch (e) {
+
+            dispatch({
+                type: "RESOLVE"
+            });
+        
+        
+            await resolveBreak(id);
+        
+            refetch();
+        
+        } catch (e) {
              setOptimistic(prev => {
                  const next = { ...prev };
                  delete next[id];
