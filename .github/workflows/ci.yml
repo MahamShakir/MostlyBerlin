@@ -221,6 +221,11 @@ jobs:
           # Auto-injected workflow token -- no PAT needed in CI.
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lowercase owner
+        run: echo "OWNER_LC${OWNER,,}" >> $GITHUB_ENV
+        env: 
+          OWNER: ${{ github.repository_owner }}
+
       - name: Build + push backend image
         id: build-backend
         uses: docker/build-push-action@v5
@@ -229,8 +234,8 @@ jobs:
           push: true
           provenance: false
           tags: |
-            ghcr.io/tradeflow-backend:${{ github.sha }}
-            ghcr.io/tradeflow-backend:latest
+            ghcr.io/${{ env.OWNER_LC }}/tradeflow-backend:${{ github.sha }}
+            ghcr.io/${{ env.OWNER_LC }}/tradeflow-backend:latest
           # Free Docker layer cache between CI runs.
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -243,8 +248,8 @@ jobs:
           push: true
           provenance: false
           tags: |
-            ghcr.io/${{ github.repository_owner }}/tradeflow-frontend:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/tradeflow-frontend:latest
+            ghcr.io/${{ env.OWNER_LC }}/tradeflow-frontend:${{ github.sha }}
+            ghcr.io/${{ env.OWNER_LC }}/tradeflow-frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
