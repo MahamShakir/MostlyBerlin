@@ -1,6 +1,11 @@
 package com.dbtraining.tradeflow.kafka;
 
 import com.dbtraining.tradeflow.dto.TradeEvent;
+import com.dbtraining.tradeflow.service.ReconciliationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Component;
 
 /**
  * ============================================================================
@@ -30,9 +35,25 @@ import com.dbtraining.tradeflow.dto.TradeEvent;
  *    }
  * ============================================================================
  */
+@Component
 public class ReconEventConsumer {
 
+    private static final Logger log = LoggerFactory.getLogger(ReconEventConsumer.class);
+
+    private final ReconciliationService reconService;
+
+    public ReconEventConsumer(ReconciliationService reconService) {
+        this.reconService = reconService;
+    }
+    @KafkaListener(
+            topics = "${tradeflow.kafka.topics.trades}",
+            groupId = "recon-group",
+            containerFactory = "kafkaListenerContainerFactory")
     public void onEvent(TradeEvent event) {
-        throw new UnsupportedOperationException("TICKET-I117");
+        if (event.action() != TradeEvent.Action.CREATED) {
+            return;
+        }
+        log.info("Reconciling tradeRef={}", event.tradeRef());
+        reconService.runForTrade(event.tradeRef());
     }
 }
