@@ -20,6 +20,8 @@
       </column>
       <column name="discrepancy_type" type="VARCHAR(30)">
       </column>
+        <column name="detected_at" type="TIMESTAMP WITH TIME ZONE">
+        </column>
       <column name="resolved_at" type="TIMESTAMP WITH TIME ZONE">
       </column>
       <column name="resolved_by" type="VARCHAR(50)">
