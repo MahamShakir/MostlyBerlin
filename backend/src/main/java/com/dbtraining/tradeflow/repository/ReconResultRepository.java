@@ -1,5 +1,15 @@
 package com.dbtraining.tradeflow.repository;
 
+import com.dbtraining.tradeflow.model.ReconResult;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
 /**
  * ============================================================================
  * ReconResultRepository — TICKET-I061 (Day 5)
@@ -21,6 +31,32 @@ package com.dbtraining.tradeflow.repository;
  *    List<ReconResult> findUnresolvedByCounterparty(@Param("cp") Long counterpartyId);
  * ============================================================================
  */
-public interface ReconResultRepository {
+@Repository
+public interface ReconResultRepository extends JpaRepository<ReconResult, Long> {
     // TODO(TICKET-I061): see comments above.
+    List<ReconResult> findByStatus(ReconResult.Status status);
+
+    long countByStatus(ReconResult.Status status);
+
+    List<ReconResult> findByTradeId(Long tradeId);
+
+    Page<ReconResult> findByStatus(ReconResult.Status status, Pageable pageable);
+
+    @Query("""
+            select r from ReconResult r
+              join r.trade t
+            where r.status = :status
+              and t.counterparty.id = :counterpartyId
+            """)
+    Page<ReconResult> findByStatusAndCounterpartyId(ReconResult.Status status,
+                                                    Long counterpartyId,
+                                                    Pageable pageable);
+
+//    @Query("""
+//           select r from ReconResult r
+//             join r.trade t
+//           where r.status = ReconResult.Status.OPEN
+//             and t.counterparty.id = :counterpartyId
+//           """)
+//    List<ReconResult> findUnresolvedByCounterparty(@Param("counterpartyId") Long counterpartyId);
 }

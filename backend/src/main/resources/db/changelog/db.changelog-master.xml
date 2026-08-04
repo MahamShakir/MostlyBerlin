@@ -24,6 +24,17 @@
 
     <!-- Day-1 bootstrap: all 5 tables + indexes -->
     <include file="db/changelog/changes/001-init.xml"/>
+    <include file="db/changelog/changes/002-create-trades.xml"/>
+    <include file="db/changelog/changes/003-create-instruments.xml"/>
+    <include file="db/changelog/changes/004-create-counterparties.xml"/>
+    <include file="db/changelog/changes/005-create-settlements.xml"/>
+    <include file="db/changelog/changes/006-create-recon-breaks.xml"/>
+    <include file="db/changelog/changes/007-fks-and-indexes.xml"/>
+    <include file="db/changelog/changes/008-seed-instruments.xml"/>
+    <include file="db/changelog/changes/009-seed-counterparties.xml"/>
+    <include file="db/changelog/changes/010-seed-trades.xml"/>
+    <include file="db/changelog/changes/011-create-views.xml"/>
+    <include file="db/changelog/changes/012-create-audit-log.xml"/>
 
     <!--
         As you complete Day-1 tickets I003..I008 (REVIEW + EXTEND the

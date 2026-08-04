@@ -22,7 +22,8 @@ public enum TradeStatus {
     MATCHED,
     UNMATCHED,
     DISPUTED,
-    CANCELLED;
+    CANCELLED,
+    SETTLED;
 
     /**
      * TODO(TICKET-I019): implement isTerminal().
@@ -30,7 +31,6 @@ public enum TradeStatus {
      * MATCHED and CANCELLED are terminal; the others are not.
      */
     public boolean isTerminal() {
-        // HINT: return this == MATCHED || this == CANCELLED;
-        throw new UnsupportedOperationException("TICKET-I019: implement TradeStatus.isTerminal()");
+        return this == MATCHED || this == CANCELLED;
     }
 }

@@ -2,6 +2,8 @@ package com.dbtraining.tradeflow.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Objects;
+import java.time.Instant;
 
 /**
  * ============================================================================
@@ -25,6 +27,76 @@ import java.time.LocalDate;
  *      "Bond coupon " + couponRate + "% mat " + maturityDate.
  * ============================================================================
  */
-public class BondTrade /* extends BaseTrade */ {
+public class BondTrade extends BaseTrade  {
     // TODO(TICKET-I031): extend BaseTrade, add coupon/maturity/faceValue, override.
+    private static final BigDecimal HUNDRED = new BigDecimal("100");
+
+    private final BigDecimal couponRate;
+    private final LocalDate maturityDate;
+    private final BigDecimal faceValue;
+
+    private BondTrade(Builder b) {
+        super(b.tradeRef, b.instrumentId, b.counterpartyId, b.quantity,
+                b.price, b.tradeDate, b.status, b.createdAt);
+
+        // TODO requireNonNull all three
+        this.couponRate = Objects.requireNonNull(b.couponRate, "couponRate required");
+        this.maturityDate = Objects.requireNonNull(b.maturityDate, "maturityDate required");
+        this.faceValue = Objects.requireNonNull(b.faceValue, "faceValue required");
+
+        // TODO range-check couponRate
+        if (couponRate.signum() < 0 || couponRate.compareTo(HUNDRED) > 0) {
+            throw new IllegalStateException("couponRate must be between 0 and 100");
+        }
+        // TODO maturityDate strictly after tradeDate
+        if (maturityDate.isAfter(tradeDate)) {
+            throw new IllegalStateException("maturityDate must be after tradeDate");
+        }
+        // TODO faceValue > 0
+        if (faceValue.signum() <= 0) {
+            throw new IllegalStateException("faceValue must be > 0");
+        }
+    }
+
+    public static Builder builder() { return new Builder(); }
+
+    // TODO getters
+    public BigDecimal getCouponRate() { return couponRate; }
+    public LocalDate getMaturityDate() { return maturityDate; }
+    public BigDecimal getFaceValue() { return faceValue; }
+
+    @Override
+    public String assetClassDescription() {
+        /* TODO - "Bond coupon 5.0% mat 2031-03-01" */
+        return "Bond coupon " + couponRate + "% mat " + maturityDate;
+    }
+
+    public static final class Builder {
+        // TODO mirror EquityTrade.Builder, swap last three setters for bond fields
+        private String tradeRef;
+        private Long instrumentId;
+        private Long counterpartyId;
+        private BigDecimal quantity;
+        private BigDecimal price;
+        private LocalDate tradeDate;
+        private TradeStatus status;
+        private Instant createdAt;
+        private BigDecimal couponRate;
+        private LocalDate maturityDate;
+        private BigDecimal faceValue;
+
+        public Builder tradeRef(String v)         { this.tradeRef = v;       return this; }
+        public Builder instrumentId(Long v)        { this.instrumentId = v;   return this; }
+        public Builder counterpartyId(Long v)      { this.counterpartyId = v; return this; }
+        public Builder quantity(BigDecimal v)      { this.quantity = v;       return this; }
+        public Builder price(BigDecimal v)         { this.price = v;          return this; }
+        public Builder tradeDate(LocalDate v)      { this.tradeDate = v;      return this; }
+        public Builder status(TradeStatus v)       { this.status = v;         return this; }
+        public Builder createdAt(Instant v)        { this.createdAt = v;      return this; }
+        public Builder couponRate(BigDecimal v)    { this.couponRate = v;     return this; }
+        public Builder maturityDate(LocalDate v)   { this.maturityDate = v;   return this; }
+        public Builder faceValue(BigDecimal v)     { this.faceValue = v;      return this; }
+
+        public BondTrade build() { return new BondTrade(this); }
+    }
 }

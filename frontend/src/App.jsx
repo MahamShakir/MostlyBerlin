@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * App.jsx — TICKET-I110
+ * App.jsx — TICKET-I110 + TICKET-I124A + TICKET-I124B
  * ============================================================================
  * WHAT:    Top-level component + React Router config.
  * HOW:     <Routes> with one <Route> per page.
@@ -9,57 +9,233 @@
  *          Router doing client-side navigation.
  * ============================================================================
  *
- *  TODO(TICKET-I110):
+ *  (TICKET-I110):
  *    - Routes: /dashboard, /trades, /trades/new, /recon
  *    - Default `/` -> redirect to /dashboard
  *    - 404 fallback page
+ *
+ *  (TICKET-I124A):
+ *    - BreakProvider wraps application routes
+ *    - Shared open breaks count available through BreakContext
+ *
+ *  (TICKET-I124B):
+ *    - Each route has its own ErrorBoundary
+ *    - One broken page does not white-screen the whole application
  * ============================================================================
  */
-import { Navigate, Route, Routes, Link } from 'react-router-dom';
-import Dashboard from './pages/Dashboard.jsx';
-import Trades from './pages/Trades.jsx';
-import AddTradeForm from './components/AddTradeForm.jsx';
-import Recon from './pages/Recon.jsx';
 
-export default function App() {
-    return (
-        <div className="layout">
-            <header className="topbar">
-                <span className="logo">DB · TradeFlow</span>
-                <span className="user">Logged in as <strong>viewer</strong></span>
-            </header>
+ import { Navigate, Route, Routes, NavLink } from 'react-router-dom';
 
-            <div className="main">
-                <nav className="sidebar">
-                    {/* TODO(TICKET-I110): use NavLink for active styling. */}
-                    <ul>
-                        <li><Link to="/dashboard">Dashboard</Link></li>
-                        <li><Link to="/trades">Trades</Link></li>
-                        <li><Link to="/trades/new">+ New Trade</Link></li>
-                        <li><Link to="/recon">Recon Breaks</Link></li>
-                    </ul>
-                </nav>
-
-                <section className="content">
-                    <Routes>
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/trades" element={<Trades />} />
-                        <Route path="/trades/new" element={<AddTradeForm />} />
-                        <Route path="/recon" element={<Recon />} />
-                        <Route path="*" element={<NotFound />} />
-                    </Routes>
-                </section>
-            </div>
-        </div>
-    );
-}
-
-function NotFound() {
-    return (
-        <div>
-            <h2>404 — Not Found</h2>
-            <Link to="/dashboard">Back to dashboard</Link>
-        </div>
-    );
-}
+ import Dashboard from './pages/Dashboard.jsx';
+ import Trades from './pages/Trades.jsx';
+ import AddTradeForm from './components/AddTradeForm.jsx';
+ import Recon from './pages/Recon.jsx';
+ 
+ import { BreakProvider, useBreaks } from './context/BreakContext.jsx';
+ import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+ 
+ 
+ export default function App() {
+ 
+     return (
+ 
+         <BreakProvider>
+ 
+             <div className="layout">
+ 
+                 <header className="topbar">
+ 
+                     <span className="logo">
+                         DB · TradeFlow
+                     </span>
+ 
+                     <span className="user">
+                         Logged in as <strong>trader</strong>
+                     </span>
+ 
+                 </header>
+ 
+ 
+                 <div className="main">
+ 
+                     <nav className="sidebar" aria-label="Primary">
+ 
+                         <BreakCount />
+ 
+ 
+                         <ul>
+ 
+                             <li>
+                                 <NavLink
+                                     to="/dashboard"
+                                     className={navClass}
+                                 >
+                                     Dashboard
+                                 </NavLink>
+                             </li>
+ 
+ 
+                             <li>
+                                 <NavLink
+                                     to="/trades"
+                                     className={navClass}
+                                 >
+                                     Trades
+                                 </NavLink>
+                             </li>
+ 
+ 
+                             <li>
+                                 <NavLink
+                                     to="/trades/new"
+                                     className={navClass}
+                                 >
+                                     + New Trade
+                                 </NavLink>
+                             </li>
+ 
+ 
+                             <li>
+                                 <NavLink
+                                     to="/recon"
+                                     className={navClass}
+                                 >
+                                     Recon Breaks
+                                 </NavLink>
+                             </li>
+ 
+                         </ul>
+ 
+                     </nav>
+ 
+ 
+                     <section className="content">
+ 
+                         <Routes>
+ 
+                             <Route
+                                 path="/"
+                                 element={
+                                     <Navigate
+                                         to="/dashboard"
+                                         replace
+                                     />
+                                 }
+                             />
+ 
+ 
+                             <Route
+                                 path="/dashboard"
+                                 element={
+                                     <ErrorBoundary>
+                                         <Dashboard />
+                                     </ErrorBoundary>
+                                 }
+                             />
+ 
+ 
+                             <Route
+                                 path="/trades"
+                                 element={
+                                     <ErrorBoundary>
+                                         <Trades />
+                                     </ErrorBoundary>
+                                 }
+                             />
+ 
+ 
+                             <Route
+                                 path="/trades/new"
+                                 element={
+                                     <ErrorBoundary>
+                                         <AddTradeForm />
+                                     </ErrorBoundary>
+                                 }
+                             />
+ 
+ 
+                             <Route
+                                 path="/recon"
+                                 element={
+                                     <ErrorBoundary>
+                                         <Recon />
+                                     </ErrorBoundary>
+                                 }
+                             />
+ 
+ 
+                             <Route
+                                 path="*"
+                                 element={
+                                     <ErrorBoundary>
+                                         <NotFound />
+                                     </ErrorBoundary>
+                                 }
+                             />
+ 
+ 
+                         </Routes>
+ 
+                     </section>
+ 
+ 
+                 </div>
+ 
+             </div>
+ 
+         </BreakProvider>
+     );
+ }
+ 
+ 
+ 
+ function BreakCount() {
+ 
+     const {
+         state
+     } = useBreaks();
+ 
+ 
+     return (
+ 
+         <div className="break-count">
+ 
+             Open Breaks:
+             <strong>
+                 {" "}
+                 {state.openCount}
+             </strong>
+ 
+         </div>
+ 
+     );
+ }
+ 
+ 
+ 
+ function navClass({ isActive }) {
+ 
+     return isActive ? 'active' : '';
+ 
+ }
+ 
+ 
+ 
+ function NotFound() {
+ 
+     return (
+ 
+         <div>
+ 
+             <h2>
+                 404 — Not Found
+             </h2>
+ 
+             <NavLink to="/dashboard">
+                 Back to dashboard
+             </NavLink>
+ 
+         </div>
+ 
+     );
+ }

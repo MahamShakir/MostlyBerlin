@@ -71,5 +71,5 @@ export const runRecon        = () =>
 export const getReconResults = (params = {}) =>
     request('/recon/results?' + new URLSearchParams(params).toString());
 
-export const resolveBreak    = (id) =>
-    request(`/recon/${id}/resolve`, { method: 'PUT' });
+export const resolveBreak    = (id, body) =>
+    request(`/recon/${id}/resolve`, { method: 'PUT', body: JSON.stringify(body) });

@@ -2,13 +2,22 @@ package com.dbtraining.tradeflow.controller;
 
 import com.dbtraining.tradeflow.dto.TradeDto;
 import com.dbtraining.tradeflow.dto.TradeRequest;
+import com.dbtraining.tradeflow.model.TradeStatus;
 import com.dbtraining.tradeflow.service.TradeService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +47,8 @@ import java.util.List;
 @Tag(name = "Trades", description = "Trade management endpoints")
 public class TradeController {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final TradeService tradeService;
 
     public TradeController(TradeService tradeService) {
@@ -47,53 +58,86 @@ public class TradeController {
     // ------------------------------------------------------------------------
     // TICKET-I068
     // ------------------------------------------------------------------------
-    @Operation(summary = "List trades (paginated, filterable)")
+    @Operation(summary = "List trades (paginated, optional status filter)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Page of trades returned"),
+            @ApiResponse(responseCode = "401", description = "Auth missing"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role")
+    })
     @GetMapping
-    public List<TradeDto> list(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) LocalDate from,
-            @RequestParam(required = false) LocalDate to
-    ) {
-        // TODO(TICKET-I068): replace this empty response with a real DB-backed
-        //   call once the JDBC DAO (Day 4 / TICKET-I045) or JPA repository
-        //   (Day 5 / TICKET-I060+I062) is in place.
-        //   For Day 1, returning an empty list keeps the React UI booting
-        //   gracefully (shows "no trades match") while you build the schema.
-        return Collections.emptyList();
+    public Page<TradeDto> list(
+            @RequestParam(required = false) TradeStatus status,
+            @PageableDefault(size = 20, sort = "tradeDate",
+                    direction = Sort.Direction.DESC) Pageable pageable) {
+        if (pageable.getPageSize() > MAX_PAGE_SIZE) {
+            throw new IllegalArgumentException("page size must be <= " + MAX_PAGE_SIZE);
+        }
+        return status != null
+                ? tradeService.findPageByStatus(status, pageable)
+                : tradeService.findAll(pageable);
+    }
+
+    @Operation(summary = "List trades whose tradeDate falls within a range")
+    @GetMapping("/by-date")
+    public Page<TradeDto> listByDate(
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to,
+            @PageableDefault(size = 20, sort = "tradeDate",
+                    direction = Sort.Direction.DESC) Pageable pageable) {
+        return tradeService.findByTradeDateBetween(from, to, pageable);
     }
 
     // ------------------------------------------------------------------------
     // TICKET-I069
     // ------------------------------------------------------------------------
     @Operation(summary = "Create a new trade")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Trade created, Location header set"),
+            @ApiResponse(responseCode = "400", description = "Validation failed"),
+            @ApiResponse(responseCode = "409", description = "Duplicate tradeRef")
+    })
     @PostMapping
     public ResponseEntity<TradeDto> create(@Valid @RequestBody TradeRequest request) {
-        // TODO(TICKET-I069): call service, build Location header, return 201.
-        //   TradeDto saved = tradeService.createTrade(request);
-        //   return ResponseEntity.created(URI.create("/api/v1/trades/" + saved.id())).body(saved);
-        throw new UnsupportedOperationException("TICKET-I069");
+        TradeDto saved = tradeService.createTrade(request);
+        return ResponseEntity
+                .created(URI.create("/api/v1/trades/" + saved.id()))
+                .body(saved);
     }
 
     // ------------------------------------------------------------------------
     // TICKET-I070
     // ------------------------------------------------------------------------
     @Operation(summary = "Update a trade's status")
+    // TODO(TICKET-I070): delegate to tradeService.updateStatus(id, body.status()).
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Updated"),
+            @ApiResponse(responseCode = "404", description = "Trade not found"),
+            @ApiResponse(responseCode = "409", description = "Cannot transition from terminal status")
+    })
     @PutMapping("/{id}/status")
-    public TradeDto updateStatus(@PathVariable Long id, @RequestBody StatusUpdate body) {
-        // TODO(TICKET-I070): delegate to tradeService.updateStatus(id, body.status()).
-        throw new UnsupportedOperationException("TICKET-I070");
+    public ResponseEntity<TradeDto> updateStatus(@PathVariable Long id,
+                                                 @Valid @RequestBody StatusUpdate body) {
+        TradeDto updated = tradeService.updateStatus(id, body.status());
+        return ResponseEntity.ok()
+                .location(URI.create("/api/v1/trades/" + id))
+                .body(updated);
     }
+
+    public record StatusUpdate(@NotNull TradeStatus status) {}
 
     // ------------------------------------------------------------------------
     // TICKET-I071 — soft delete
     // ------------------------------------------------------------------------
     @Operation(summary = "Soft-delete a trade (sets status to CANCELLED)")
+    // TODO(TICKET-I071): tradeService.softDelete(id); return 204.
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Soft-deleted (idempotent)"),
+            @ApiResponse(responseCode = "404", description = "Trade not found"),
+            @ApiResponse(responseCode = "409", description = "Trade already SETTLED")
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> softDelete(@PathVariable Long id) {
-        // TODO(TICKET-I071): tradeService.softDelete(id); return 204.
-        throw new UnsupportedOperationException("TICKET-I071");
+        tradeService.softDelete(id);
+        return ResponseEntity.noContent().build();
     }
-
-    /** Tiny inbound record for PUT /{id}/status. */
-    public record StatusUpdate(String status) {}
 }

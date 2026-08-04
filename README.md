@@ -10,6 +10,12 @@ reconciliation platform with Kafka event streaming and a CI/CD pipeline.
 
 ---
 
+
+## Entity Relationship Diagram
+
+[`./db/erd.md`]
+
+
 ## What you will build
 
 A mid-complexity trade reconciliation system used (in concept) by an Operations

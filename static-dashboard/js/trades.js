@@ -14,6 +14,7 @@
 // TODO(TICKET-I093): set the base URL — default to localhost:8080 during dev.
 const API_BASE = "http://localhost:8080/api/v1";
 const AUTH_HEADER = "Basic " + btoa("viewer:viewer-pass");
+const PAGE_SIZE = 20;
 
 // Module-level state — Day 8 is exactly what makes this approach painful.
 let allTrades = [];
@@ -34,19 +35,22 @@ document.addEventListener("DOMContentLoaded", () => {
  *
  * HINT: use async/await for readability.
  */
+let pageContent = [];
+
+document.addEventListener("DOMContentLoaded", loadTrades);
+
 async function loadTrades() {
-    const loading = document.getElementById("trades-loading");
+    const loading  = document.getElementById("trades-loading");
     const errorDiv = document.getElementById("trades-error");
     loading.classList.remove("hidden");
     errorDiv.classList.add("hidden");
 
     try {
-        const res = await fetch(`${API_BASE}/trades?size=200`, {
-            headers: { "Authorization": AUTH_HEADER }
-        });
+        const url = `${API_BASE}/trades?size=${PAGE_SIZE}`;
+        const res = await fetch(url, { headers: { "Authorization": AUTH_HEADER } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const page = await res.json();
-        allTrades = page.content || page; // Spring Data Page or plain array
+        pageContent = page.content || page;
         render();
     } catch (e) {
         errorDiv.textContent = "Could not load trades: " + e.message;
@@ -74,24 +78,34 @@ function bindSortHandlers() {
 
 function render() {
     const tbody = document.getElementById("trades-tbody");
-    const sorted = [...allTrades].sort(compareBy(sortKey, sortDir));
-    tbody.innerHTML = sorted.map(rowHtml).join("");
+    tbody.innerHTML = pageContent.map(rowHtml).join("");
 }
 
 function rowHtml(t) {
-    // TODO(TICKET-I092 / I093): show a badge with status colour.
     const badgeClass = "badge-" + (t.status || "pending").toLowerCase();
     return `
         <tr>
-            <td>${t.tradeRef}</td>
+            <td>${escapeHtml(t.tradeRef)}</td>
             <td>${t.instrumentId}</td>
             <td>${t.counterpartyId}</td>
-            <td>${t.quantity}</td>
-            <td>${t.price}</td>
+            <td>${formatNumber(t.quantity)}</td>
+            <td>${formatNumber(t.price)}</td>
             <td>${t.tradeDate}</td>
-            <td><span class="badge ${badgeClass}">${t.status}</span></td>
+            <td><span class="badge ${badgeClass}">${t.status ?? "PENDING"}</span></td>
         </tr>
     `;
+}
+
+function formatNumber(n) {
+    if (n == null) return "";
+    const num = Number(n);
+    return Number.isFinite(num) ? num.toLocaleString("en-GB", { maximumFractionDigits: 4 }) : String(n);
+}
+
+function escapeHtml(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&", "<": "<", ">": ">", "\"": """, "'": "'"
+    }[c]));
 }
 
 function compareBy(key, dir) {

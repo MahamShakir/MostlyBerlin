@@ -8,12 +8,15 @@
 # OBSERVE: `docker build .` succeeds; `docker run -p 8081:80 <image>` serves
 #          the UI on localhost:8081.
 # ============================================================================
+# ============================================================================
+# frontend/Dockerfile — TICKET-I126
+# Multi-stage: Node builder -> nginx runtime. Final image ~25 MB.
+# ============================================================================
 
 # ---- Stage 1: build -------------------------------------------------------
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Cache node_modules layer
 COPY package*.json ./
 RUN npm ci
 
@@ -23,12 +26,7 @@ RUN npm run build
 # ---- Stage 2: nginx serve -------------------------------------------------
 FROM nginx:1.27-alpine
 
-# TODO(TICKET-I126 + TICKET-I128): copy a custom nginx.conf that:
-#   - serves /dist
-#   - fallbacks SPA routes to index.html (try_files $uri /index.html)
-#   - reverse-proxies /api/* and /actuator/* to backend:8080
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
