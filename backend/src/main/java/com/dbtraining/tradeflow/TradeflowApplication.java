@@ -1,13 +1,8 @@
 // backend/src/main/java/com/dbtraining/tradeflow/TradeflowApplication.java
 package com.dbtraining.tradeflow;
 
-import com.dbtraining.tradeflow.model.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
 
 @SpringBootApplication
 public class TradeflowApplication {
