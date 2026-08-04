@@ -4,6 +4,7 @@ import com.dbtraining.tradeflow.dto.Discrepancy;
 import com.dbtraining.tradeflow.dto.ReconReport;
 import com.dbtraining.tradeflow.model.*;
 import com.dbtraining.tradeflow.repository.ReconResultRepository;
+import com.dbtraining.tradeflow.repository.TradeRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,11 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * ReconciliationServiceTest — TICKET-I048 (all-matched happy path)
- *                            + TICKET-I049 (price mismatch flagged, plus
- *                              scale-difference regression)
- *                            + TICKET-I050 (missing-external / missing-internal
- *                              siblings).
- *
+ * + TICKET-I049 (price mismatch flagged, plus
+ * scale-difference regression)
+ * + TICKET-I050 (missing-external / missing-internal
+ * siblings).
+ * <p>
  * Pure-function tests — no @SpringBootTest, no live DB, sub-second run.
  * Naming convention: methodUnderTest_scenario_expected — the whole Day-4
  * suite follows the same pattern so JaCoCo output stays greppable.
@@ -32,13 +33,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith(MockitoExtension.class)
 class ReconciliationServiceTest {
 
-    @Mock private ReconResultRepository reconResultRepository;
-    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+    @Mock
+    private ReconResultRepository reconResultRepository;
+    @Mock
+    private MeterRegistry meterRegistry;
+    @Mock
+    private TradeRepository tradeRepository;
     private ReconciliationService service;
 
     @BeforeEach
     void setUp() {
-        service = new ReconciliationService(reconResultRepository, meterRegistry);
+        service = new ReconciliationService(reconResultRepository, tradeRepository, meterRegistry);
     }
 
     // -----------------------------------------------------------------------
@@ -62,10 +67,10 @@ class ReconciliationServiceTest {
     // -----------------------------------------------------------------------
     @Test
     void matchTrades_priceMismatch_flagsDiscrepancy() {
-        BaseTrade in  = equityWith("TRD-001", new BigDecimal("100"),
-                                   new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
+        BaseTrade in = equityWith("TRD-001", new BigDecimal("100"),
+                new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
         BaseTrade out = equityWith("TRD-001", new BigDecimal("100"),
-                                   new BigDecimal("249.99"), LocalDate.of(2026, 3, 1));
+                new BigDecimal("249.99"), LocalDate.of(2026, 3, 1));
 
         ReconReport report = service.matchTrades(List.of(in), List.of(out));
 
@@ -76,13 +81,15 @@ class ReconciliationServiceTest {
         assertThat(d.types()).containsExactly(DiscrepancyType.PRICE_MISMATCH);
     }
 
-    /** Scale-difference regression test: 245.5 vs 245.50 are equal by compareTo. */
+    /**
+     * Scale-difference regression test: 245.5 vs 245.50 are equal by compareTo.
+     */
     @Test
     void matchTrades_priceScaleDifference_notFlagged() {
-        BaseTrade in  = equityWith("TRD-002", new BigDecimal("100"),
-                                   new BigDecimal("245.5"),  LocalDate.of(2026, 3, 1));
+        BaseTrade in = equityWith("TRD-002", new BigDecimal("100"),
+                new BigDecimal("245.5"), LocalDate.of(2026, 3, 1));
         BaseTrade out = equityWith("TRD-002", new BigDecimal("100"),
-                                   new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
+                new BigDecimal("245.50"), LocalDate.of(2026, 3, 1));
 
         ReconReport report = service.matchTrades(List.of(in), List.of(out));
 
