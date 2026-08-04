@@ -30,6 +30,6 @@ scrape_configs:
       - targets: ['backend:8080']
 
   # ----- Kafka -- TICKET-I121 (uncomment when Kafka exposes JMX metrics) ----
-  # - job_name: 'kafka'
-  #   static_configs:
-  #     - targets: ['kafka:9101']
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka:9101']
