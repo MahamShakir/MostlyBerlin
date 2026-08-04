@@ -229,8 +229,8 @@ jobs:
           push: true
           provenance: false
           tags: |
-            ghcr.io/${{ github.repository_owner }}/tradeflow-backend:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/tradeflow-backend:latest
+            ghcr.io/tradeflow-backend:${{ github.sha }}
+            ghcr.io/tradeflow-backend:latest
           # Free Docker layer cache between CI runs.
           cache-from: type=gha
           cache-to: type=gha,mode=max
