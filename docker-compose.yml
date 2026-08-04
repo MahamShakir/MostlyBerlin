@@ -19,6 +19,26 @@
 #          'healthy' or 'running' state. The recon flow must work end-to-end.
 # ============================================================================
 
+# ============================================================================
+# Network map (default compose bridge network):
+#
+#   browser  --[host:5173]-->  frontend (nginx)
+#   browser  --[host:8080]-->  backend  (Spring Boot)
+#
+#   frontend --[/api/, /actuator/]-->  http://backend:8080      (proxy_pass)
+#   backend  --[JDBC]              -->  jdbc:postgresql://postgres:5432/tradeflow
+#   backend  --[Kafka client]      -->  kafka:29092             (INTERNAL listener)
+#   prometheus --[/actuator/prometheus]--> http://backend:8080
+#   grafana    --[datasource]      -->  http://prometheus:9090
+#
+# Inside the compose network, NEVER use `localhost`. localhost == the container
+# itself. Use service names + container ports. Host-mapped ports (the left side
+# of `5173:80`) are only for your browser / Postman on the laptop.
+#
+# Decision: we use the nginx reverse-proxy at RUNTIME (not VITE_API_BASE_URL
+# at build time) so the same frontend image works in dev + demo without a rebuild.
+# ============================================================================
+
 version: "3.9"
 
 services:
