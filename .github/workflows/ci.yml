@@ -222,7 +222,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set lowercase owner
-        run: echo "OWNER_LC${OWNER,,}" >> $GITHUB_ENV
+        run: echo "OWNER_LC=${OWNER,,}" >> $GITHUB_ENV
         env: 
           OWNER: ${{ github.repository_owner }}
 
