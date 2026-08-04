@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReducer } from "react";
+import {createContext, useContext, useEffect, useReducer} from "react";
 
 const initialState = {
     openCount: 0,
@@ -36,7 +36,7 @@ function reducer(state, action) {
 const BreakContext = createContext(null);
 
 
-export function BreakProvider({ children }) {
+export function BreakProvider({children}) {
 
     const [state, dispatch] = useReducer(
         reducer,
@@ -46,9 +46,10 @@ export function BreakProvider({ children }) {
 
     useEffect(() => {
 
-        fetch("/api/v1/recon/breaks/open-count")
+        fetch("/api/v1/recon/results")
             .then(response => response.json())
             .then(data => {
+                data = data.filter(result => result.status === "OPEN")
 
                 dispatch({
                     type: "HYDRATE",

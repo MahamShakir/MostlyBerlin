@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * suite follows the same pattern so JaCoCo output stays greppable.
  */
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("dev")
 class ReconciliationServiceTest {
 
     @Mock

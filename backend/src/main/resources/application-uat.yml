@@ -9,7 +9,7 @@
 
 spring:
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:tradeflow}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5433/${POSTGRES_DB:tradeflow}
     username: ${POSTGRES_USER:tradeflow_user}
     password: ${POSTGRES_PASSWORD:changeme}
     hikari:
