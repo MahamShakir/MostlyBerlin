@@ -23,12 +23,12 @@
 # Network map (default compose bridge network):
 #
 #   browser  --[host:5173]-->  frontend (nginx)
-#   browser  --[host:8080]-->  backend  (Spring Boot)
+#   browser  --[host:8081]-->  backend  (Spring Boot)
 #
-#   frontend --[/api/, /actuator/]-->  http://backend:8080      (proxy_pass)
+#   frontend --[/api/, /actuator/]-->  http://backend:8081      (proxy_pass)
 #   backend  --[JDBC]              -->  jdbc:postgresql://postgres:5432/tradeflow
 #   backend  --[Kafka client]      -->  kafka:29092             (INTERNAL listener)
-#   prometheus --[/actuator/prometheus]--> http://backend:8080
+#   prometheus --[/actuator/prometheus]--> http://backend:8081
 #   grafana    --[datasource]      -->  http://prometheus:9090
 #
 # Inside the compose network, NEVER use `localhost`. localhost == the container
@@ -116,7 +116,7 @@ services:
   # Backend — Spring Boot recon-service
   # --------------------------------------------------------------------------
   # TODO(TICKET-I125 + TICKET-I127): build from ./backend/Dockerfile, depend on
-  # postgres + kafka, expose 8080, point JDBC URL to 'postgres' (NOT localhost).
+  # postgres + kafka, expose 8081, point JDBC URL to 'postgres' (NOT localhost).
   #
   backend:
     image: tradeflow-backend:latest
@@ -124,7 +124,7 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       kafka: { condition: service_healthy }
-    ports: [ "8080:8080" ]
+    ports: [ "8081:8081" ]
     environment:
       SPRING_PROFILES_ACTIVE: prod
       POSTGRES_HOST: postgres
@@ -134,7 +134,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1" ]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep -q '\"status\":\"UP\"' || exit 1" ]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -164,8 +164,8 @@ services:
   # Prometheus — scrapes /actuator/prometheus from backend
   # --------------------------------------------------------------------------
   # TODO(TICKET-I129): mount monitoring/prometheus/prometheus.yml read-only.
-  # HINT: The scrape target inside the compose network is 'backend:8080',
-  #       NOT 'localhost:8080'.
+  # HINT: The scrape target inside the compose network is 'backend:8081',
+  #       NOT 'localhost:8081'.
   #
   prometheus:
     image: prom/prometheus:latest

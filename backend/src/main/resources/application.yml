@@ -10,6 +10,9 @@
 #          (or uat/prod) to confirm the right config loaded.
 # ============================================================================
 
+server:
+  port: 8081
+
 spring:
   application:
     name: tradeflow
