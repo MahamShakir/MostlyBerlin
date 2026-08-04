@@ -1,6 +1,7 @@
 package com.dbtraining.tradeflow.service;
 
 import com.dbtraining.tradeflow.dto.TradeDto;
+import com.dbtraining.tradeflow.dto.TradeEvent;
 import com.dbtraining.tradeflow.dto.TradeRequest;
 import com.dbtraining.tradeflow.exception.TradeNotFoundException;
 import com.dbtraining.tradeflow.kafka.TradeEventProducer;
