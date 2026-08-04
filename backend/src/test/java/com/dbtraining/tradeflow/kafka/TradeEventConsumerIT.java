@@ -5,6 +5,7 @@ import com.dbtraining.tradeflow.dto.TradeDto;
 import com.dbtraining.tradeflow.dto.TradeEvent;
 import com.dbtraining.tradeflow.model.TradeStatus;
 //import com.dbtraining.tradeflow.service.AuditService;
+import com.dbtraining.tradeflow.service.AuditService;
 import com.dbtraining.tradeflow.service.ReconciliationService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -31,6 +32,9 @@ import java.time.LocalDate;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @SpringBootTest(classes = {
@@ -56,7 +60,7 @@ class TradeEventConsumerIT {
     private TradeEventProducer producer;
     @MockBean
     private ReconciliationService reconciliationService;
-//    @MockBean   private AuditService auditService;
+    @MockBean   private AuditService auditService;
 
     @Test
     void publishedEvent_isReceivedByBothConsumerGroups() throws InterruptedException {
@@ -69,8 +73,8 @@ class TradeEventConsumerIT {
         producer.publish(event);
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-//            verify(reconciliationService).runForTrade(eq("TRD-IT-0001"));
-//            verify(auditService).record(any(TradeEvent.class));
+            verify(reconciliationService).runForTrade(eq("TRD-IT-0001"));
+            verify(auditService).record(any(TradeEvent.class));
         });
     }
 
@@ -85,7 +89,7 @@ class TradeEventConsumerIT {
         producer.publish(event);
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-//            verify(auditService).record(any(TradeEvent.class));
+            verify(auditService).record(any(TradeEvent.class));
             verifyNoInteractions(reconciliationService);
         });
     }
