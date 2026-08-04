@@ -18,8 +18,8 @@ export default defineConfig({
         port: 5173,
         proxy: {
             // TICKET-I100: send /api/* and /actuator/* to the Spring Boot dev server.
-            '/api': 'http://localhost:8080',
-            '/actuator': 'http://localhost:8080'
+            '/api': 'http://localhost:8081',
+            '/actuator': 'http://localhost:8081'
         }
     },
     test: {

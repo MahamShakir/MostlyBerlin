@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -38,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = TradeController.class)
 @Import({com.dbtraining.tradeflow.config.SecurityConfig.class,
         com.dbtraining.tradeflow.exception.GlobalExceptionHandler.class})
+@ActiveProfiles("dev")
 public class TradeControllerTest {
 
     @Autowired

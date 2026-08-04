@@ -47,13 +47,13 @@ services:
   # --------------------------------------------------------------------------
   postgres:
     image: postgres:15-alpine
-    container_name: tradeflow-postgres
+    container_name: tradeflow-postgres-1
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-tradeflow}
       POSTGRES_USER: ${POSTGRES_USER:-tradeflow_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -119,14 +119,14 @@ services:
   # postgres + kafka, expose 8080, point JDBC URL to 'postgres' (NOT localhost).
   #
   backend:
-    image: ${BACKEND_IMAGE:-ghcr.io/your-org/tradeflow-backend:latest}
+    image: tradeflow-backend:latest
     container_name: tradeflow-backend
     depends_on:
       postgres: { condition: service_healthy }
       kafka: { condition: service_healthy }
     ports: [ "8080:8080" ]
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: prod
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       POSTGRES_DB: ${POSTGRES_DB:-tradeflow}
@@ -148,7 +148,7 @@ services:
   # (mapped to host 5173), depend on backend.
   #
   frontend:
-    image: ${FRONTEND_IMAGE:-ghcr.io/your-org/tradeflow-frontend:latest}
+    image: tradeflow-frontend:latest
     container_name: tradeflow-frontend
     depends_on:
       backend: { condition: service_healthy }
