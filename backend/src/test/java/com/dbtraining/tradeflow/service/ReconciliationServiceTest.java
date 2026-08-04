@@ -37,7 +37,6 @@ class ReconciliationServiceTest {
 
     @Mock
     private ReconResultRepository reconResultRepository;
-    @Mock
     private MeterRegistry meterRegistry;
     @Mock
     private TradeRepository tradeRepository;
@@ -45,6 +44,7 @@ class ReconciliationServiceTest {
 
     @BeforeEach
     void setUp() {
+        meterRegistry = new SimpleMeterRegistry();
         service = new ReconciliationService(reconResultRepository, tradeRepository, meterRegistry);
     }
 
