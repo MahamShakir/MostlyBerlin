@@ -9,6 +9,7 @@ import com.dbtraining.tradeflow.model.BaseTrade;
 import com.dbtraining.tradeflow.model.DiscrepancyType;
 import com.dbtraining.tradeflow.model.ReconResult;
 import com.dbtraining.tradeflow.repository.ReconResultRepository;
+import com.dbtraining.tradeflow.repository.TradeRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.data.domain.Page;
@@ -16,7 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import io.micrometer.core.instrument.Timer;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -50,15 +52,20 @@ import java.util.stream.Collectors;
 
 @Service
 public class ReconciliationService {
+
+    private static final Logger log = LoggerFactory.getLogger(ReconciliationService.class);
+
     private final ReconResultRepository reconResultRepository;
+    private final TradeRepository tradeRepository;
     private final Timer reconRunTimer;
     private final Counter reconResolvedCounter;
 
     public ReconciliationService(ReconResultRepository reconResultRepository,
+                                 TradeRepository tradeRepository,
                                  MeterRegistry meterRegistry) {
 
         this.reconResultRepository = reconResultRepository;
-
+        this.tradeRepository = tradeRepository;
         // ------------------------------------------------------------
         // TICKET-I079 — recon latency timer (with p50 / p95 / p99)
         // ------------------------------------------------------------
@@ -213,5 +220,22 @@ public class ReconciliationService {
         r.resolve();
         reconResolvedCounter.increment();
         // Audit row is written by the Day-2 DB trigger on UPDATE.
+    }
+
+    // ------------------------------------------------------------------------
+    // TICKET-I117 — per-trade auto-reconciliation (called by ReconEventConsumer)
+    // ------------------------------------------------------------------------
+    @Transactional
+    public void runForTrade(String tradeRef) {
+        tradeRepository.findByTradeRef(tradeRef).ifPresent(trade -> {
+            if (reconResultRepository.findByTradeId(trade.getId()).isEmpty()) {
+                ReconResult result = ReconResult.builder()
+                        .trade(trade)
+                        .discrepancyType(DiscrepancyType.MISSING_TRADE)
+                        .build();
+                reconResultRepository.save(result);
+            }
+            log.info("Recon: trade {} status={}", tradeRef, trade.getStatus());
+        });
     }
 }
